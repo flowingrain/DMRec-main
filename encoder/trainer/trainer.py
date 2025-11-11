@@ -28,6 +28,8 @@ def init_seed():
 def naive_sparse2tensor(data):
     return torch.FloatTensor(data.toarray())
 
+update_counts = 0
+
 
 class Trainer(object):
     def __init__(self, data_handler, logger):
@@ -42,7 +44,6 @@ class Trainer(object):
                                         weight_decay=optim_config['weight_decay'])
 
     def train_epoch(self, model, epoch_idx):
-
         global update_counts
 
         train_list = list(range(configs['data']['user_num']))
