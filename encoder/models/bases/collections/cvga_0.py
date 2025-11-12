@@ -10,22 +10,17 @@ class CVGABackbone(BaseModel):
 	"""
 	Collaborative Variational Graph Auto-Encoder (CVGA)
 	
-	According to paper "Revisiting Graph-based Recommender Systems from the Perspective of Variational Auto-Encoder":
-	
 	Key differences from traditional VAE:
-	1. Uses single-layer GCN to encode user-item collaborative relationships on bipartite graph
+	1. Uses GNN to encode user-item collaborative relationships on bipartite graph
 	2. Does NOT learn user/item embeddings - focuses on user behavior distribution
 	3. Uses variational inference to approximate posterior distribution
 	4. Reconstructs the entire user-item interaction graph
 	5. Training is interaction-agnostic with near-linear time complexity
 	
 	GNN Implementation:
-	- Uses single-layer GCN (as per paper) to learn distribution parameters (μ, σ²)
-	- User nodes use their interaction vectors x_u (multi-hot) as input features
-	- Item nodes use constant features (one-hot or constant)
-	- GCN aggregates one-hop neighbors to learn μ and log(σ²) for each user
 	- Default: LightGCN (simplified GCN without activation and transformation)
 	- Can fallback to standard GCN by setting use_lightgcn=False in config
+	- LightGCN is more efficient and often performs better for recommendation
 	
 	LLM Alignment Support:
 	- Added LLM embedding support to enable distribution matching with strategies (MDDM/CPDM/GODM)
@@ -53,14 +48,12 @@ class CVGABackbone(BaseModel):
 		latent_dim = hyper.get('latent_dim', 200)  # Latent space dimension
 		self.latent_dim = latent_dim  # Store for use in encode_llm
 		
-		# According to CVGA paper: use single-layer GCN
-		# Paper states that multi-layer GCN causes dimension mismatch issues
+		# Choose GNN type: default is LightGCN
 		use_lightgcn = hyper.get('use_lightgcn', True)
-		gcn_n_layers = hyper.get('gcn_n_layers', 1)  # CVGA uses single-layer GCN by default
+		gcn_n_layers = hyper.get('gcn_n_layers', 3)  # Number of LightGCN layers
 		
 		if use_lightgcn:
 			# LightGCN Encoder: simplified GCN without activation and transformation
-			# CVGA paper uses single-layer GCN to learn distribution parameters
 			# All layers use the same dimension (input_dim), final projection to latent_dim * 2
 			self.gcn_encoder = MultiLayerLightGCN(
 				dim=input_dim,
@@ -69,9 +62,9 @@ class CVGABackbone(BaseModel):
 				final_proj_dim=latent_dim * 2  # Project to [mu, logvar] dimensions
 			)
 		else:
-			# Standard GCN Encoder: single-layer as per CVGA paper
-			# Structure: [input_dim] -> [latent_dim * 2] (single layer)
-			encoder_dims = [input_dim, latent_dim * 2]
+			# Standard GCN Encoder (backward compatibility)
+			hidden_dims = hyper.get('gcn_hidden_dims', [64, 32])  # GCN hidden dimensions
+			encoder_dims = [input_dim] + hidden_dims + [latent_dim * 2]
 			self.gcn_encoder = MultiLayerGCN(
 				dims=encoder_dims,
 				dropout=self.dropout,
@@ -105,81 +98,35 @@ class CVGABackbone(BaseModel):
 		
 		# Initialize node features (simple one-hot or interaction-based, NOT learnable embeddings)
 		# CVGA uses the interaction graph itself as input features
-		# Note: We'll update this with actual interaction data in forward_for_loss
 		self._init_node_features(input_dim)
-		self.use_interaction_features = hyper.get('use_interaction_features', True)  # Use actual x_u as features
 	
 	def _init_node_features(self, input_dim):
 		"""
 		Initialize node features based on interaction graph.
-		According to CVGA paper, node features should be derived from interaction data.
-		For users: use their interaction vectors (multi-hot)
-		For items: use simple constant features (or one-hot)
+		CVGA does NOT use learnable embeddings - features are derived from graph structure.
 		"""
-		# According to CVGA paper, users' input features are their interaction vectors x_u
-		# Items can use simple constant features
-		# We'll construct this from the training data
 		if input_dim == 1:
-			# Simple constant features for all nodes
+			# Simple: use degree or constant features
+			# In practice, CVGA may use interaction indicators
 			self.node_features = torch.ones(self.total_nodes, input_dim).to(configs['device'])
 		else:
-			# For higher dimensions, could use interaction patterns
-			# But CVGA typically uses input_dim=1 with interaction data
+			# Could use more sophisticated features (e.g., interaction patterns)
 			self.node_features = torch.randn(self.total_nodes, input_dim).to(configs['device'])
 	
-	def _update_node_features_from_data(self):
-		"""
-		Update node features using actual interaction data.
-		According to CVGA paper, user nodes should use their interaction vectors x_u.
-		This should be called when training data is available.
-		"""
-		# Get training data matrix
-		train_data = self.data_handler.train_data  # [user_num, item_num] sparse matrix
-		
-		# For users: use their interaction vectors (multi-hot) x_u
-		# According to CVGA paper, x_u is a multi-hot vector of dimension item_num
-		user_features = torch.FloatTensor(train_data.toarray()).to(configs['device'])  # [user_num, item_num]
-		
-		# For items: use simple constant features (one-hot or constant)
-		# Items don't have interaction vectors, so use identity matrix or constant features
-		if self.node_features.shape[1] == self.item_num:
-			# If input_dim matches item_num, use identity for items
-			item_features = torch.eye(self.item_num).to(configs['device'])  # [item_num, item_num]
-		else:
-			# Otherwise, use constant features matching the input_dim
-			item_features = torch.ones(self.item_num, self.node_features.shape[1]).to(configs['device'])
-		
-		# Concatenate: [user_features; item_features]
-		# If dimensions don't match, we need to project user_features
-		if user_features.shape[1] != self.node_features.shape[1]:
-			# Project user interaction vectors to match input_dim
-			# This is a simplification - ideally input_dim should equal item_num
-			if not hasattr(self, '_user_feature_proj'):
-				self._user_feature_proj = nn.Linear(user_features.shape[1], self.node_features.shape[1]).to(configs['device'])
-			user_features = self._user_feature_proj(user_features)
-		
-		self.node_features = torch.cat([user_features, item_features], dim=0)  # [total_nodes, input_dim]
-	
-	def encode(self, adj, node_features=None):
+	def encode(self, adj):
 		"""
 		Encode user-item collaborative relationships using GNN.
-		According to CVGA paper: single-layer GCN aggregates neighbors to learn distribution parameters.
 		
 		Args:
 			adj: [N, N] sparse adjacency matrix (N = user_num + item_num)
-			node_features: [N, input_dim] node features (if None, use self.node_features)
 		
 		Returns:
 			mu: [N, latent_dim] mean of latent distribution
 			logvar: [N, latent_dim] log variance of latent distribution
 		"""
-		if node_features is None:
-			node_features = self.node_features
-		
 		# GNN encoding: propagate information through graph
-		# Single-layer GCN: aggregates one-hop neighbors to learn distribution parameters
 		# This captures collaborative relationships via information aggregation
-		encoded = self.gcn_encoder(node_features, adj)  # [N, latent_dim * 2]
+		encoded = self.gcn_encoder(self.node_features, adj)  # [N, latent_dim * 2]
 		
 		# Split into mu and logvar for variational inference
 		mu = encoded[:, :encoded.shape[1] // 2]  # [N, latent_dim]
@@ -256,11 +203,10 @@ class CVGABackbone(BaseModel):
 	def forward_for_loss(self, batch_users, data):
 		"""
 		Forward pass for training.
-		According to CVGA paper: uses user interaction vectors x_u as node features.
 		
 		Args:
 			batch_users: [batch_size] user indices
-			data: [batch_size, item_num] user-item interaction data (x_u for users in batch)
+			data: [batch_size, item_num] user-item interaction data
 		
 		Returns:
 			dict with intermediate values for loss computation
@@ -270,13 +216,7 @@ class CVGABackbone(BaseModel):
 		# Get adjacency matrix (user-item bipartite graph)
 		adj = self.data_handler.torch_adj  # [N, N] sparse tensor
 		
-		# According to CVGA paper: update node features with actual interaction data
-		# Users use their interaction vectors x_u, items use constant features
-		if self.use_interaction_features:
-			self._update_node_features_from_data()
-		
 		# Encode collaborative relationships using GNN
-		# Single-layer GCN aggregates neighbors to learn distribution parameters
 		mu, logvar = self.encode(adj)  # [N, latent_dim] each
 		
 		# For CVGA, we focus on user behavior distribution
@@ -307,7 +247,6 @@ class CVGABackbone(BaseModel):
 	def forward_for_predict(self, pck_users, train_mask):
 		"""
 		Forward pass for prediction/evaluation.
-		According to CVGA paper: uses user interaction vectors x_u as node features.
 		
 		Args:
 			pck_users: [batch_size] user indices
@@ -322,11 +261,7 @@ class CVGABackbone(BaseModel):
 		# Get adjacency matrix
 		adj = self.data_handler.torch_adj
 		
-		# According to CVGA paper: update node features with actual interaction data
-		if self.use_interaction_features:
-			self._update_node_features_from_data()
-		
-		# Encode using GNN (single-layer GCN)
+		# Encode using GNN
 		mu, logvar = self.encode(adj)
 		
 		# Extract user nodes
