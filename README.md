@@ -1,6 +1,6 @@
 # DMRec
 
-This is the PyTorch implementation for our SIGIR 2025 paper:
+This is an extended PyTorch implementation based on the DMRec framework from the SIGIR 2025 paper:
 > Yi Zhang, Yiwen Zhang*, Yu Wang, Tong Chen, and Hongzhi Yin*. 2025. [Towards Distribution Matching between Collaborative and Language Spaces for Generative Recommendation](https://arxiv.org/abs/2504.07363). In Proceedings of the 48th International ACM SIGIR Conference on Research and Development in Information Retrieval (SIGIR’25).
 
 <p align="center">
@@ -58,8 +58,22 @@ To maintain fair comparisons and consistency, the model training framework, the 
 
 Many thanks to them for providing the training framework and for the active contribution to the open source community.
 
+This implementation is based on the official DMRec repository: 
+>https://github.com/BlueGhostYi/DMRec/tree/main
+
+We appreciate the original authors for their valuable work and open-sourcing the code.
+
+## 📝 Our Extensions
+In this implementation, we have made the following extensions to the original DMRec framework:
+
+1. **Decoupled Architecture**: We have refactored the code to support a decoupled design, allowing users to select a base model and an alignment strategy separately, and compose them at runtime. This provides more flexibility in experimentation.
+
+2. **Enhanced CLI Interface**: Added new command-line options (`--base_model` and `--strategy`) to support the decoupled architecture while maintaining backward compatibility with the original `--model {base}_{strategy}` usage.
+
+3. **Modular Implementation**: Improved code modularity to make it easier to add new base models and alignment strategies in the future.
+
 ## 📝 Citation
-If you find this work is helpful to your research, please consider citing our paper:
+If you find this work is helpful to your research, please consider citing the original paper:
 ```
 @article{zhang2025towards,
   title={Towards Distribution Matching between Collaborative and Language Spaces for Generative Recommendation},
