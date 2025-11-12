@@ -72,6 +72,24 @@ In this implementation, we have made the following extensions to the original DM
 
 3. **Modular Implementation**: Improved code modularity to make it easier to add new base models and alignment strategies in the future.
 
+## 📝 Implementation Notes
+
+### Performance Gap Note
+When using L-DiffRec as the base model with MDDM alignment strategy on the Amazon dataset, we observed a significant performance gap compared to the reported metrics in the paper. Specifically:
+
+- **Reported in paper (L-DiffRec + DMRec-M/MDDM on Amazon-Book):**
+  - R@10: 0.1111
+  - R@20: 0.1576
+  - N@10: 0.0893
+  - N@20: 0.1044
+
+- **Our implementation results:**
+  - Command: `python train_encoder.py --base_model l_diffrec --strategy mddm --dataset amazon --cuda 0`
+  - Best Epoch: 147
+  - Final test result: {'recall': array([0.09264065, 0.1389612 ]), 'ndcg': array([0.0706756 , 0.08601871])}
+
+This performance difference may be attributed to variations in implementation details, hyperparameter settings, or environmental factors. Users are advised to further tune hyperparameters for optimal results with this specific model-strategy combination.
+
 ## 📝 Citation
 If you find this work is helpful to your research, please consider citing the original paper:
 ```
