@@ -8,6 +8,12 @@ class CompositeModel(nn.Module):
 		super().__init__()
 		self.base = base_model
 		self.strategy = strategy
+		
+		# Register any nn.Module components in strategy as submodules
+		# This ensures they are included in model.parameters() for training
+		for name, module in strategy.__dict__.items():
+			if isinstance(module, nn.Module):
+				self.add_module(f'strategy_{name}', module)
 
 	def cal_loss(self, batch_users, data):
 		inter = self.base.forward_for_loss(batch_users, data)

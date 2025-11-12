@@ -47,11 +47,13 @@ class CVGABackbone(BaseModel):
 		self.dropout = hyper.get('dropout', 0.2)
 		
 		# GNN encoder dimensions
-		# Input: one-hot or interaction features (no learnable embeddings!)
-		# According to CVGA, we don't learn user/item embeddings
-		input_dim = hyper.get('input_dim', 1)  # Simple one-hot or interaction indicator
+		# Input: user interaction vectors x_u (multi-hot, dimension = item_num)
+		# According to CVGA paper, users use their interaction vectors as input features
+		# For CVGA, input_dim should match item_num to use interaction vectors directly
+		input_dim = hyper.get('input_dim', self.item_num)  # Default to item_num to use interaction vectors
 		latent_dim = hyper.get('latent_dim', 200)  # Latent space dimension
 		self.latent_dim = latent_dim  # Store for use in encode_llm
+		self.input_dim = input_dim  # Store for node feature updates
 		
 		# According to CVGA paper: use single-layer GCN
 		# Paper states that multi-layer GCN causes dimension mismatch issues
@@ -103,29 +105,37 @@ class CVGABackbone(BaseModel):
 			nn.Linear(600, 400)
 		)
 		
-		# Initialize node features (simple one-hot or interaction-based, NOT learnable embeddings)
+		# Initialize node features placeholder
 		# CVGA uses the interaction graph itself as input features
 		# Note: We'll update this with actual interaction data in forward_for_loss
 		self._init_node_features(input_dim)
 		self.use_interaction_features = hyper.get('use_interaction_features', True)  # Use actual x_u as features
+		
+		# Pre-initialize projection layers to avoid state_dict loading issues
+		# Always create them as identity layers if not needed, to ensure consistent state_dict
+		# This prevents "Unexpected key" errors when loading saved models
+		if input_dim != self.item_num:
+			# Need projection from item_num to input_dim
+			self._user_feature_proj = nn.Linear(self.item_num, input_dim, bias=False).to(configs['device'])
+			if input_dim < self.item_num:
+				# If input_dim < item_num, items also need projection
+				self._item_feature_proj = nn.Linear(self.item_num, input_dim, bias=False).to(configs['device'])
+			else:
+				# If input_dim > item_num, items can use padding or projection
+				self._item_feature_proj = None
+		else:
+			# No projection needed, but create identity-like layers for state_dict consistency
+			# Use a dummy layer that will be bypassed in forward pass
+			self._user_feature_proj = nn.Identity()  # Always present in state_dict
+			self._item_feature_proj = None
 	
 	def _init_node_features(self, input_dim):
 		"""
-		Initialize node features based on interaction graph.
-		According to CVGA paper, node features should be derived from interaction data.
-		For users: use their interaction vectors (multi-hot)
-		For items: use simple constant features (or one-hot)
+		Initialize node features placeholder.
+		Actual features will be updated from interaction data in forward pass.
 		"""
-		# According to CVGA paper, users' input features are their interaction vectors x_u
-		# Items can use simple constant features
-		# We'll construct this from the training data
-		if input_dim == 1:
-			# Simple constant features for all nodes
-			self.node_features = torch.ones(self.total_nodes, input_dim).to(configs['device'])
-		else:
-			# For higher dimensions, could use interaction patterns
-			# But CVGA typically uses input_dim=1 with interaction data
-			self.node_features = torch.randn(self.total_nodes, input_dim).to(configs['device'])
+		# Initialize placeholder (will be updated with actual interaction data)
+		self.node_features = torch.ones(self.total_nodes, input_dim).to(configs['device'])
 	
 	def _update_node_features_from_data(self):
 		"""
@@ -140,24 +150,27 @@ class CVGABackbone(BaseModel):
 		# According to CVGA paper, x_u is a multi-hot vector of dimension item_num
 		user_features = torch.FloatTensor(train_data.toarray()).to(configs['device'])  # [user_num, item_num]
 		
-		# For items: use simple constant features (one-hot or constant)
-		# Items don't have interaction vectors, so use identity matrix or constant features
-		if self.node_features.shape[1] == self.item_num:
-			# If input_dim matches item_num, use identity for items
+		# For items: use one-hot identity matrix (each item is represented by its own one-hot vector)
+		# This matches the CVGA paper's approach where items use simple features
+		if self.input_dim == self.item_num:
+			# If input_dim matches item_num, use identity matrix for items
 			item_features = torch.eye(self.item_num).to(configs['device'])  # [item_num, item_num]
 		else:
-			# Otherwise, use constant features matching the input_dim
-			item_features = torch.ones(self.item_num, self.node_features.shape[1]).to(configs['device'])
+			# If input_dim != item_num, use projection (already initialized in __init__)
+			if self._item_feature_proj is not None:
+				item_onehot = torch.eye(self.item_num).to(configs['device'])
+				item_features = self._item_feature_proj(item_onehot)
+			else:
+				# Fallback: use constant features
+				item_features = torch.ones(self.item_num, self.input_dim).to(configs['device'])
+		
+		# Project user features if needed
+		# _user_feature_proj is always present (either Linear or Identity)
+		if isinstance(self._user_feature_proj, nn.Linear):
+			user_features = self._user_feature_proj(user_features)
+		# If Identity, no projection needed (already correct dimension)
 		
 		# Concatenate: [user_features; item_features]
-		# If dimensions don't match, we need to project user_features
-		if user_features.shape[1] != self.node_features.shape[1]:
-			# Project user interaction vectors to match input_dim
-			# This is a simplification - ideally input_dim should equal item_num
-			if not hasattr(self, '_user_feature_proj'):
-				self._user_feature_proj = nn.Linear(user_features.shape[1], self.node_features.shape[1]).to(configs['device'])
-			user_features = self._user_feature_proj(user_features)
-		
 		self.node_features = torch.cat([user_features, item_features], dim=0)  # [total_nodes, input_dim]
 	
 	def encode(self, adj, node_features=None):
