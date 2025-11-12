@@ -1,0 +1,2 @@
+python train_encoder.py --model mult_vae_mddm --dataset amazon --cuda 0
+Best Epoch 183. Final test result: {'recall': array([0.06974205, 0.10507024, 0.15604424]), 'ndcg': array([0.06813704, 0.08042316, 0.09756433])}.

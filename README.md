@@ -17,7 +17,26 @@ yaml == 0.2.5
 ```
 
 ## 📝 Examples to run the codes
-We adopt three widely used recommendation datasets: Amazon-Book, Yelp, and Steam used in previous work. DMRec is a recommendation framework, which means you need to first define the base model to be run, and then select three matching strategies (GODM, CPDM, and MDDM). The following are examples of runs on three datasets:
+We adopt three widely used recommendation datasets: Amazon-Book, Yelp, and Steam used in previous work.
+
+DMRec now supports a decoupled design: you can select a base model and an alignment strategy separately, then compose them at runtime.
+We also keep backward compatibility with the legacy `--model {base}_{strategy}` usage.
+
+### New usage (recommended)
+- Base-strategy composition (example with Mult-VAE + MDDM):
+
+  `python train_encoder.py --base_model mult_vae --strategy mddm --dataset {dataset} --cuda 0`
+
+- Other strategies:
+
+  `python train_encoder.py --base_model mult_vae --strategy godm --dataset {dataset} --cuda 0`
+
+  `python train_encoder.py --base_model mult_vae --strategy cpdm --dataset {dataset} --cuda 0`
+
+Note: currently the Mult‑VAE base with MDDM strategy is implemented; GODM/CPDM strategies and CVGA/L‑DiffRec bases are placeholders to be filled.
+
+### Legacy usage (still supported)
+We also support the original shortcut by specifying a composed model name:
 
 - Global Optimality for Distribution Matching:
 
