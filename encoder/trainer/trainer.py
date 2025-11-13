@@ -42,6 +42,31 @@ class Trainer(object):
         if optim_config['name'] == 'adam':
             self.optimizer = optim.Adam(model.parameters(), lr=optim_config['lr'],
                                         weight_decay=optim_config['weight_decay'])
+        
+        # 学习率调度器（可选，针对 CVGA 等模型）
+        use_scheduler = optim_config.get('use_scheduler', False)
+        if use_scheduler:
+            scheduler_type = optim_config.get('scheduler_type', 'plateau')
+            if scheduler_type == 'plateau':
+                # ReduceLROnPlateau: 当验证指标不提升时降低学习率
+                self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+                    self.optimizer,
+                    mode='max',  # 监控 recall（越大越好）
+                    factor=optim_config.get('scheduler_factor', 0.5),
+                    patience=optim_config.get('scheduler_patience', 10),
+                    verbose=True
+                )
+            elif scheduler_type == 'cosine':
+                # CosineAnnealingLR: 余弦退火
+                self.scheduler = optim.lr_scheduler.CosineAnnealingLR(
+                    self.optimizer,
+                    T_max=configs['train']['epoch'],
+                    eta_min=optim_config.get('min_lr', 1e-6)
+                )
+            else:
+                self.scheduler = None
+        else:
+            self.scheduler = None
 
     def train_epoch(self, model, epoch_idx):
         global update_counts
@@ -60,9 +85,17 @@ class Trainer(object):
             batch_data = self.data_handler.train_data[train_list[start_id:end_id]]
             data = naive_sparse2tensor(batch_data).to(configs['device'])
 
-            loss, loss_dict = model.cal_loss(train_list[start_id:end_id], data)
+            # Pass epoch information for adaptive sampling (if supported)
+            max_epoch = configs['train']['epoch']
+            loss, loss_dict = model.cal_loss(train_list[start_id:end_id], data, epoch_idx=epoch_idx, max_epoch=max_epoch)
             ep_loss += loss.item()
             loss.backward()
+            
+            # 梯度裁剪（针对 CVGA 等 GNN 模型，可选）
+            clip_grad = configs['optimizer'].get('clip_grad', None)
+            if clip_grad is not None and clip_grad > 0:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=clip_grad)
+            
             self.optimizer.step()
 
             update_counts += 1
@@ -98,6 +131,15 @@ class Trainer(object):
             # evaluate
             if epoch_idx % train_config['test_step'] == 0:
                 eval_result = self.evaluate(model, epoch_idx)
+                
+                # 更新学习率调度器（如果使用 ReduceLROnPlateau）
+                if self.scheduler is not None:
+                    if isinstance(self.scheduler, optim.lr_scheduler.ReduceLROnPlateau):
+                        # ReduceLROnPlateau 需要传入监控的指标
+                        self.scheduler.step(eval_result['recall'][-1])
+                    else:
+                        # 其他调度器（如 CosineAnnealingLR）直接 step
+                        self.scheduler.step()
 
                 if eval_result['recall'][-1] > best_recall:
                     now_patience = 0

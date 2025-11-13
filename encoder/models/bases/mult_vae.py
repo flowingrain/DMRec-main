@@ -82,10 +82,26 @@ class MultVAEBackbone(BaseModel):
 		self.is_training = True
 		user_emb = self.usrprf_embeds[batch_users]
 		mu_src, mu_llm, logvar_src, logvar_llm = self.encode(data, user_emb)
+		
+		# Compute z and recon_x for unified interface
+		# Combine mu_src and mu_llm for standard VAE reparameterization
+		mu = mu_src + mu_llm
+		logvar = logvar_src + logvar_llm
+		z = self.reparameterize(mu, logvar)
+		recon_x = self.decode(z)
+		
+		# Compute model-specific losses for strategy modules
+		# Mult-VAE: use combined mu and logvar
+		kld = - 0.5 * torch.mean(torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1))
+		bce = - torch.mean(torch.sum(F.log_softmax(recon_x, 1) * data, -1))
+		
 		return {
 			'mu_src': mu_src, 'mu_llm': mu_llm,
 			'logvar_src': logvar_src, 'logvar_llm': logvar_llm,
-			'user_emb': user_emb
+			'user_emb': user_emb,
+			'recon_x': recon_x,  # Reconstructed interactions
+			'kld': kld,  # Model-specific KLD
+			'bce': bce  # Model-specific reconstruction loss
 		}
 
 	def forward_for_predict(self, pck_users, train_mask):

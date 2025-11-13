@@ -17,41 +17,30 @@ class CPDMStrategy(object):
 		logvar_src = inter['logvar_src']
 		logvar_llm = inter['logvar_llm']
 
-		# Unified design: addition then downstream tasks
+		# CPDM strategy: compute alignment terms (KLD_1 and KLD_2)
+		# 与原始实现保持一致：先相加再做对齐
 		mu = mu_src + mu_llm
 		logvar = logvar_src + logvar_llm
 
-		# Use diffused z if available (for L-DiffRec), otherwise reparameterize
-		if 'z_diffused' in inter:
-			z = inter['z_diffused']
-		else:
-			std = torch.exp(0.5 * logvar)
-			eps = torch.randn_like(std)
-			z = eps.mul(std) + mu
-
-		# Reconstruction
-		recon_x = decode_fn(z)
-		BCE = - torch.mean(torch.sum(F.log_softmax(recon_x, 1) * data, -1))
-
-		# KL terms
-		KLD = - 0.5 * torch.mean(torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1))
-
+		# CPDM特定：计算混合分布和两个KL散度
 		mu_mix = (mu + mu_llm) / 2
 		logvar_mix = (logvar + logvar_llm) / 2
 
+		# KLD_1: 组合分布到混合分布
 		KLD_1 = - 0.5 * torch.mean(torch.sum(
 			1 + torch.log(logvar.exp()/(logvar_mix.exp() + 10e-8) + 10e-8)
 			- (mu - mu_mix).pow(2)/(logvar_mix.exp() + 10e-8)
 			- logvar.exp()/(logvar_mix.exp() + 10e-8), dim=1))
 
+		# KLD_2: LLM分布到混合分布
 		KLD_2 = - 0.5 * torch.mean(torch.sum(
 			1 + torch.log(logvar_llm.exp()/(logvar_mix.exp() + 10e-8) + 10e-8)
 			- (mu_llm - mu_mix).pow(2)/(logvar_mix.exp() + 10e-8)
 			- logvar_llm.exp()/(logvar_mix.exp() + 10e-8), dim=1))
 
-		KLD = KLD + self.beta * (KLD_1 + KLD_2)
+		# Strategy only computes alignment term
+		# Total loss combination is done in builder: loss = bce + kld + beta * (KLD_1 + KLD_2)
+		alignment_term = self.beta * (KLD_1 + KLD_2)
 
-		loss = BCE + KLD
-		losses = {'rec_loss': BCE, 'reg_loss': KLD}
-		return loss, losses
+		return alignment_term, {'kld_1': KLD_1, 'kld_2': KLD_2}
 

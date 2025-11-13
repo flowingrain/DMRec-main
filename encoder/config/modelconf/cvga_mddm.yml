@@ -1,0 +1,63 @@
+optimizer:
+  name: adam
+  lr: 5.0e-4  # 降低学习率（从 1e-3 降低到 5e-4，针对 CVGA 优化）
+  weight_decay: 1.0e-5  # 添加小的权重衰减
+  clip_grad: 1.0  # 梯度裁剪，防止梯度爆炸（针对 GNN 模型）
+  use_scheduler: true  # 启用学习率调度器
+  scheduler_type: plateau  # 使用 ReduceLROnPlateau
+  scheduler_factor: 0.5  # 学习率减半
+  scheduler_patience: 10  # 10 个 epoch 不提升就降低学习率
+
+train:
+  epoch: 1000
+  batch_size: 1024
+  save_model: false
+  loss: pairwise
+  test_step: 3
+  reproducible: true
+  seed: 2024
+  patience: 30  # 增加 patience，因为 CVGA 可能收敛更慢
+
+test:
+  metrics: [recall, ndcg]
+  k: [10, 20]
+  batch_size: 1024
+
+data:
+  type: general_cf
+  name: amazon
+
+model:
+  name: cvga_mddm
+  # general parameters here
+  
+  # dataset-specific parameters here
+  dropout: 0.2
+  reg_weight: 1.0e-6
+  
+  # CVGA specific parameters
+  latent_dim: 200
+  input_dim: null  # 使用 item_num（默认）
+  use_lightgcn: true
+  gcn_n_layers: 1  # CVGA 论文建议单层
+  decoder_hidden_dims: [64, 128]  # 稍微加深解码器（从 [32, 64] 改进）
+  use_interaction_features: true
+  
+  # for amazon
+  amazon:
+    dropout: 0.3
+    beta: 0.6
+    reg_weight: 1.0e-6
+    # CVGA 特定优化
+    decoder_hidden_dims: [64, 128]  # 加深解码器
+  # for yelp
+  yelp:
+    dropout: 0.3
+    beta: 0.4
+    reg_weight: 1.0e-6
+  # for steam
+  steam:
+    dropout: 0.2
+    beta: 0.5
+    reg_weight: 1.0e-6
+

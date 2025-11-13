@@ -32,42 +32,21 @@ class MDDMStrategy(object):
 		mu_llm = inter['mu_llm']
 		logvar_src = inter['logvar_src']
 		logvar_llm = inter['logvar_llm']
-
-		# CVGA: already has recon_x computed
-		if 'recon_x' in inter:
-			recon_x = inter['recon_x']
-			# CVGA: use mu_src and logvar_src directly (no mu_llm)
-			KLD = - 0.5 * torch.mean(torch.sum(1 + logvar_src - mu_src.pow(2) - logvar_src.exp(), dim=1))
-		else:
-			# Standard VAE path: 相加路径
-			mu = mu_src + mu_llm
-			logvar = logvar_src + logvar_llm
-
-			# Use diffused z if available (for L-DiffRec), otherwise reparameterize
-			if 'z_diffused' in inter:
-				z = inter['z_diffused']
-			else:
-				std = torch.exp(0.5 * logvar)
-				eps = torch.randn_like(std)
-				z = eps.mul(std) + mu
-
-			# CVGA's decode needs user_indices
-			if 'user_indices' in inter:
-				recon_x = decode_fn(z, inter['user_indices'])
-			else:
-				recon_x = decode_fn(z)
-			
-			# Standard VAE KLD computation
-			KLD = - 0.5 * torch.mean(torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1))
-			KLD_llm = - 0.5 * torch.mean(torch.sum(
-				1 + torch.log(logvar.exp()/(logvar_llm.exp() + 10e-8) + 10e-8)
-				- (mu - mu_llm).pow(2)/(logvar_llm.exp() + 10e-8)
-				- logvar.exp()/(logvar_llm.exp() + 10e-8), dim=1))
-			KLD = self.beta * KLD + (1 - self.beta) * KLD_llm
 		
-		BCE = - torch.mean(torch.sum(F.log_softmax(recon_x, 1) * data, -1))
-
-		loss = BCE + KLD
-		losses = {'rec_loss': BCE, 'reg_loss': KLD}
-		return loss, losses
+		# MDDM strategy: compute alignment term (KLD_llm)
+		# 与原始实现保持一致：先相加再做对齐
+		mu = mu_src + mu_llm
+		logvar = logvar_src + logvar_llm
+		
+		# KLD_llm：KL(q(z|x) || q_llm(z|x))，衡量组合分布与LLM分布的差异
+		KLD_llm = - 0.5 * torch.mean(torch.sum(
+			1 + torch.log(logvar.exp()/(logvar_llm.exp() + 10e-8) + 10e-8)
+			- (mu - mu_llm).pow(2)/(logvar_llm.exp() + 10e-8)
+			- logvar.exp()/(logvar_llm.exp() + 10e-8), dim=1))
+		
+		# Strategy only computes alignment term
+		# Total loss combination is done in builder: loss = bce + beta * kld + (1 - beta) * KLD_llm
+		alignment_term = (1 - self.beta) * KLD_llm
+		
+		return alignment_term, {'kld_llm': KLD_llm}
 

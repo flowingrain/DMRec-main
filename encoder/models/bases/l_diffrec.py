@@ -123,13 +123,25 @@ class LDiffRecBackbone(BaseModel):
 			diffusion_loss = diffusion_terms.get("loss", torch.tensor(0.0).to(data.device))
 		else:
 			z_diffused = z_0
+		
+		# Compute recon_x for unified interface
+		recon_x = self.decode(z_diffused)
+
+		# Compute model-specific losses for strategy modules
+		# L-DiffRec: no KLD (diffusion-based model, not VAE)
+		# Diffusion process itself provides regularization
+		kld = torch.tensor(0.0, device=mu_src.device)
+		bce = - torch.mean(torch.sum(F.log_softmax(recon_x, 1) * data, -1))
 
 		return {
 			'mu_src': mu_src, 'mu_llm': mu_llm,
 			'logvar_src': logvar_src, 'logvar_llm': logvar_llm,
 			'user_emb': user_emb,
 			'z_diffused': z_diffused,  # Diffused latent for decoding
-			'diffusion_loss': diffusion_loss
+			'diffusion_loss': diffusion_loss,
+			'recon_x': recon_x,  # Reconstructed interactions
+			'kld': kld,  # Model-specific KLD (0.0 for L-DiffRec)
+			'bce': bce  # Model-specific reconstruction loss
 		}
 
 	def forward_for_predict(self, pck_users, train_mask):

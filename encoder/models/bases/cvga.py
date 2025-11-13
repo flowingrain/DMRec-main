@@ -307,14 +307,23 @@ class CVGABackbone(BaseModel):
 		user_emb = self.usrprf_embeds[batch_users]  # [batch_size, usrprf_dim]
 		mu_llm, logvar_llm = self.encode_llm(data, user_emb)  # [batch_size, latent_dim] each
 		
+		# Compute model-specific losses for strategy modules
+		# CVGA: use mu_src and logvar_src directly (no mu_llm addition)
+		mu_src_batch = user_mu[batch_users]  # [batch_size, latent_dim]
+		logvar_src_batch = user_logvar[batch_users]  # [batch_size, latent_dim]
+		kld = - 0.5 * torch.mean(torch.sum(1 + logvar_src_batch - mu_src_batch.pow(2) - logvar_src_batch.exp(), dim=1))
+		bce = - torch.mean(torch.sum(F.log_softmax(recon_x, 1) * data, -1))
+		
 		return {
-			'mu_src': user_mu[batch_users],  # [batch_size, latent_dim] from GNN encoding
+			'mu_src': mu_src_batch,  # [batch_size, latent_dim] from GNN encoding
 			'mu_llm': mu_llm,  # [batch_size, latent_dim] from LLM embeddings
-			'logvar_src': user_logvar[batch_users],  # [batch_size, latent_dim] from GNN encoding
+			'logvar_src': logvar_src_batch,  # [batch_size, latent_dim] from GNN encoding
 			'logvar_llm': logvar_llm,  # [batch_size, latent_dim] from LLM embeddings
 			'z': z,  # Sampled latent codes
 			'recon_x': recon_x,  # Reconstructed interactions
-			'user_indices': batch_users
+			'user_indices': batch_users,
+			'kld': kld,  # Model-specific KLD
+			'bce': bce  # Model-specific reconstruction loss
 		}
 	
 	def forward_for_predict(self, pck_users, train_mask):

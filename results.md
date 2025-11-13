@@ -3,3 +3,6 @@ Best Epoch 183. Final test result: {'recall': array([0.06974205, 0.10507024, 0.1
 
 python train_encoder.py --base_model mult_vae --strategy fmdm --dataset amazon --cuda 0
 Best Epoch 120. Final test result: {'recall': array([0.10166969, 0.14958132]), 'ndcg': array([0.07693701, 0.0928937 ])}.
+
+python train_encoder.py --base_model mult_vae --strategy rfdm --dataset amazon --cuda 0
+Best Epoch 102. Final test result: {'recall': array([0.10476952, 0.15300632]), 'ndcg': array([0.07929117, 0.09523369])}.

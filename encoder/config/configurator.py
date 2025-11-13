@@ -9,7 +9,7 @@ def parse_configure(model=None, dataset=None):
     parser = argparse.ArgumentParser(description='DMRec')
     parser.add_argument('--model', type=str, default='mult_vae_mddm', help='Model name (legacy, e.g., mult_vae_mddm)')
     parser.add_argument('--base_model', type=str, default=None, help='Base model, e.g., mult_vae / cvga / l_diffrec')
-    parser.add_argument('--strategy', type=str, default=None, help='Alignment strategy, e.g., mddm / cpdm / godm')
+    parser.add_argument('--strategy', type=str, default=None, help='Alignment strategy, e.g., mddm / cpdm / godm / rfdm')
     parser.add_argument('--dataset', type=str, default='amazon', help='Dataset name')
     parser.add_argument('--device', type=str, default='cuda', help='cpu or cuda')
     parser.add_argument('--seed', type=int, default=None, help='Device number')
@@ -112,6 +112,7 @@ def parse_configure(model=None, dataset=None):
         configs['model']['base'] = args.base_model.lower()
     if args.strategy is not None:
         configs['model']['strategy'] = args.strategy.lower()
+    
     # normalize name for logging
     if 'base' in configs['model'] and 'strategy' in configs['model']:
         configs['model']['name'] = '{}_{}'.format(configs['model']['base'], configs['model']['strategy'])

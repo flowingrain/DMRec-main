@@ -23,17 +23,29 @@ DMRec now supports a decoupled design: you can select a base model and an alignm
 We also keep backward compatibility with the legacy `--model {base}_{strategy}` usage.
 
 ### New usage (recommended)
-- Base-strategy composition (example with Mult-VAE + MDDM):
+- Base-strategy composition examples:
 
-  `python train_encoder.py --base_model mult_vae --strategy mddm --dataset {dataset} --cuda 0`
+  ```bash
+  # Mult-VAE with different strategies
+  python train_encoder.py --base_model mult_vae --strategy mddm --dataset {dataset} --cuda 0
+  python train_encoder.py --base_model mult_vae --strategy godm --dataset {dataset} --cuda 0
+  python train_encoder.py --base_model mult_vae --strategy cpdm --dataset {dataset} --cuda 0
+  python train_encoder.py --base_model mult_vae --strategy fmdm --dataset {dataset} --cuda 0
+  python train_encoder.py --base_model mult_vae --strategy rfdm --dataset {dataset} --cuda 0
 
-- Other strategies:
+  # CVGA with different strategies
+  python train_encoder.py --base_model cvga --strategy mddm --dataset {dataset} --cuda 0
+  python train_encoder.py --base_model cvga --strategy godm --dataset {dataset} --cuda 0
 
-  `python train_encoder.py --base_model mult_vae --strategy godm --dataset {dataset} --cuda 0`
+  # L-DiffRec with different strategies
+  python train_encoder.py --base_model l_diffrec --strategy mddm --dataset {dataset} --cuda 0
+  python train_encoder.py --base_model l_diffrec --strategy godm --dataset {dataset} --cuda 0
+  ```
 
-  `python train_encoder.py --base_model mult_vae --strategy cpdm --dataset {dataset} --cuda 0`
-
-Note: currently the Mult‑VAE base with MDDM strategy is implemented; GODM/CPDM strategies and CVGA/L‑DiffRec bases are placeholders to be filled.
+**Available combinations:**
+- **Base Models**: `mult_vae`, `cvga`, `l_diffrec`
+- **Strategies**: `mddm`, `cpdm`, `godm`, `fmdm`, `rfdm`
+- **Datasets**: `amazon`, `yelp`, `steam`
 
 ### Legacy usage (still supported)
 We also support the original shortcut by specifying a composed model name:
@@ -71,6 +83,136 @@ In this implementation, we have made the following extensions to the original DM
 2. **Enhanced CLI Interface**: Added new command-line options (`--base_model` and `--strategy`) to support the decoupled architecture while maintaining backward compatibility with the original `--model {base}_{strategy}` usage.
 
 3. **Modular Implementation**: Improved code modularity to make it easier to add new base models and alignment strategies in the future.
+
+## 📝 Architecture Overview
+
+### Decoupled Design Philosophy
+
+The refactored implementation follows a **separation of concerns** principle:
+
+- **Base Models** (`encoder/models/bases/`): Responsible for model-specific computations
+  - Compute reconstruction loss (BCE)
+  - Compute model-specific regularization (KLD)
+  - Provide intermediate outputs (`mu_src`, `mu_llm`, `logvar_src`, `logvar_llm`, `recon_x`, `bce`, `kld`)
+
+- **Strategies** (`encoder/models/strategies/`): Responsible for alignment-specific computations
+  - **Only** compute strategy-specific alignment terms (e.g., KLD_llm, KLD_1+KLD_2, WD, Flow loss)
+  - Do **not** compute model-specific losses (BCE, KLD)
+  - Do **not** combine losses - this is handled by the builder
+
+- **Builder** (`encoder/models/builder.py`): Responsible for composition and loss combination
+  - Composes base model and strategy at runtime
+  - Combines all losses: `loss = bce + reg_loss + diffusion_loss` (if applicable)
+  - Handles different combination methods for different strategies
+
+### Loss Computation Flow
+
+```
+┌─────────────────┐
+│  Base Model     │
+│  forward_for_   │
+│  loss()         │
+└────────┬────────┘
+         │
+         ├─> mu_src, mu_llm, logvar_src, logvar_llm
+         ├─> recon_x (reconstructed interactions)
+         ├─> bce (reconstruction loss)
+         └─> kld (model-specific KLD)
+         │
+         ▼
+┌─────────────────┐
+│  Strategy       │
+│  compute_loss() │
+└────────┬────────┘
+         │
+         ├─> alignment_term (strategy-specific)
+         └─> strategy_losses (dict for logging)
+         │
+         ▼
+┌─────────────────┐
+│  Builder        │
+│  cal_loss()     │
+└────────┬────────┘
+         │
+         ├─> reg_loss = combine(kld, alignment_term)
+         └─> loss = bce + reg_loss + diffusion_loss
+```
+
+### Supported Base Models
+
+#### Mult-VAE
+- **Description**: Standard Variational Autoencoder with collaborative filtering
+- **Architecture**: Encodes user-item interactions into latent space, combines collaborative filtering space (`mu_src`, `logvar_src`) and LLM space (`mu_llm`, `logvar_llm`)
+- **Key Features**:
+  - Uses combined latent representation: `mu = mu_src + mu_llm`, `logvar = logvar_src + logvar_llm`
+  - KLD computed using the combined distribution
+  - Suitable for standard recommendation scenarios with rich interaction data
+
+#### CVGA (Collaborative Variational Graph Autoencoder)
+- **Description**: Graph-based VAE using Graph Neural Network (GNN) encoding
+- **Architecture**: Leverages graph structure of user-item interactions, encodes via GNN layers
+- **Key Features**:
+  - Uses GNN to capture high-order collaborative signals
+  - KLD computed using `mu_src` and `logvar_src` directly (no addition with LLM space)
+  - Better for scenarios where graph structure is important
+
+#### L-DiffRec (Latent Diffusion for Recommendation)
+- **Description**: Diffusion-based generative model for recommendation
+- **Architecture**: Uses diffusion process in latent space instead of standard VAE reparameterization
+- **Key Features**:
+  - KLD = 0.0 (diffusion process itself provides regularization)
+  - Additional `diffusion_loss` from the diffusion training process
+  - More flexible generative process, suitable for complex recommendation patterns
+
+### Supported Strategies
+
+#### MDDM (Mixing Divergence for Distribution Matching)
+- **Principle**: Balances between model regularization (KLD) and alignment with LLM distribution (KLD_llm)
+- **Alignment Term**: `KLD_llm` - KL divergence between combined distribution `q(z|x)` and LLM distribution `q_llm(z|x)`
+- **Loss Combination**: `reg_loss = beta * kld + (1 - beta) * KLD_llm`
+- **Characteristics**: 
+  - Weighted combination of two regularization terms
+  - `beta` controls the trade-off between model regularization and LLM alignment
+  - Suitable when you want balanced regularization
+
+#### CPDM (Composite Prior for Distribution Matching)
+- **Principle**: Aligns both combined distribution and LLM distribution to an intermediate mixed distribution
+- **Alignment Terms**: 
+  - `KLD_1`: KL divergence from combined distribution to mixed distribution
+  - `KLD_2`: KL divergence from LLM distribution to mixed distribution
+- **Loss Combination**: `reg_loss = kld + beta * (KLD_1 + KLD_2)`
+- **Characteristics**:
+  - Uses intermediate mixed distribution as a bridge
+  - Encourages both spaces to converge to a common prior
+  - Good for scenarios requiring strong alignment
+
+#### GODM (Global Optimality for Distribution Matching)
+- **Principle**: Minimizes Wasserstein distance between collaborative and LLM spaces
+- **Alignment Term**: `WD` - Wasserstein distance between two Gaussian distributions
+  - Computed as: `WD = mean(sqrt(||mu_src - mu_llm||² + ||std_src - std_llm||²))`
+- **Loss Combination**: `reg_loss = kld + beta * WD`
+- **Characteristics**:
+  - Direct distance metric between distributions
+  - More stable than KL divergence in some cases
+  - Suitable for scenarios where distribution shapes are important
+
+#### FMDM (Flow Matching for Distribution Matching)
+- **Principle**: Learns a vector field to transport samples from LLM space to collaborative space
+- **Alignment Term**: `Flow loss` - Mean squared error between predicted and target velocity fields
+- **Loss Combination**: `reg_loss = kld + beta * flow_loss`
+- **Characteristics**:
+  - Uses continuous normalizing flows
+  - Learns smooth transport paths between spaces
+  - Good for complex distribution transformations
+
+#### RFDM (Rectified Flow for Distribution Matching)
+- **Principle**: Uses rectified flow (straight-line paths) to transport between distributions
+- **Alignment Term**: `Flow loss` - Rectified flow matching loss with adaptive sampling
+- **Loss Combination**: `reg_loss = kld + beta * flow_loss`
+- **Characteristics**:
+  - Simpler than FMDM (straight paths instead of learned paths)
+  - Supports adaptive sampling based on training epoch
+  - Efficient and effective for distribution alignment
 
 ## 📝 Implementation Notes
 
