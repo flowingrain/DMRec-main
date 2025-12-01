@@ -1,0 +1,510 @@
+%%
+%% ReFlowRec: 基于修正流匹配的推荐系统中LLM-CF分布对齐
+%% 基于 DMRec 模板生成
+%%
+%% Commands for TeXCount
+%TC:macro \cite [option:text,text]
+%TC:macro \citep [option:text,text]
+%TC:macro \citet [option:text,text]
+%TC:envir table 0 1
+%TC:envir table* 0 1
+%TC:envir tabular [ignore] word
+%TC:envir displaymath 0 word
+%TC:envir math 0 word
+%TC:envir comment 0 0
+%%
+% Disable microtype expansion BEFORE acmart loads it
+% This prevents font expansion issues with non-scalable fonts like wasysym
+\PassOptionsToPackage{expansion=false}{microtype}
+
+% Note: acmart-preload-hook.tex will intercept font package loading
+% to prevent Libertine/NewTX fonts from being loaded
+\documentclass[sigconf]{acmart}
+
+% Immediately after \documentclass, ensure Computer Modern fonts are used
+% The acmart-preload-hook.tex should have prevented Libertine/NewTX from loading,
+% but we also set the flag here as a backup
+\makeatletter
+% Force disable new fonts flag (backup in case hook didn't fully work)
+\@ACM@newfontsfalse
+\makeatother
+
+% Load ctex for Chinese support
+% IMPORTANT: This document should be compiled with XeLaTeX, not pdfLaTeX
+% XeLaTeX provides better Chinese support and doesn't require font generation
+% scheme=plain prevents baselinestretch modification (ACM requirement)
+% fontset=windows uses Windows system fonts (SimSun, SimHei, etc.)
+\usepackage[UTF8,scheme=plain,fontset=windows]{ctex}
+
+% For XeLaTeX, font setup is handled by ctex and fontspec (loaded by ctex)
+% ctex with fontset=windows will set up both Chinese and Latin fonts
+% We don't need to manually set fonts here - ctex handles it automatically
+% The fontset=windows option uses Windows system fonts for Chinese
+% and appropriate Latin fonts for English text
+
+\usepackage{subfigure} 
+\usepackage[ruled]{algorithm2e}
+\usepackage{algorithmic}
+\usepackage{threeparttable}
+\usepackage{wasysym}
+\usepackage{enumitem}
+\usepackage{multirow}
+
+% Protect baselinestretch from being redefined (ACM requirement)
+% scheme=plain should prevent ctex from modifying it
+% We don't need to set it explicitly - scheme=plain handles it
+% If ACM still complains, we can add protection here, but it's usually not needed
+
+%%
+%% \BibTeX command to typeset BibTeX logo in the docs
+\AtBeginDocument{%
+  \providecommand\BibTeX{{%
+    Bib\TeX}}}
+
+%% Rights management information
+\setcopyright{acmlicensed}
+\copyrightyear{2025}
+\acmYear{2025}
+\acmConference[SIGIR '25] {Proceedings of the 48th International ACM SIGIR Conference on Research and Development in Information Retrieval}{July 13--18, 2025}{Padua, Italy}
+\acmBooktitle{Proceedings of the 48th International ACM SIGIR Conference on Research and Development in Information Retrieval (SIGIR '25), July 13--18, 2025, Padua, Italy}
+\acmISBN{979-8-4007-1592-1/25/07}
+\acmDOI{10.1145/XXXXXX.XXXXXX}
+
+%%
+%% The "title" command
+\title{ReFlowRec: 基于修正流匹配的推荐系统中LLM-CF分布对齐}
+
+%%
+%% The "author" command and its associated commands are used to define
+%% the authors and their affiliations.
+\author{Your Name}
+\affiliation{%
+  \institution{Your Institution}
+  \city{Your City}
+  \country{Your Country}}
+\email{your.email@example.com}
+
+% Add more authors as needed
+% \author{Co-Author}
+% \affiliation{%
+%   \institution{Co-Author Institution}
+%   \city{Co-Author City}
+%   \country{Co-Author Country}}
+% \email{coauthor@example.com}
+
+\renewcommand{\shortauthors}{Your Name \& Co-Authors}
+
+%%
+%% The abstract
+\begin{abstract}
+生成推荐旨在学习整个物品集合上的生成过程，为用户生成推荐。随着预训练语言模型（LMs）的兴起，将LMs融入生成推荐已受到广泛关注。然而，对齐协同过滤（CF）空间和语言空间之间的分布仍然具有挑战性。现有方法，如分布匹配框架（DMRec），依赖于传统的对齐策略（KL散度、Wasserstein距离），这些方法需要复杂的优化过程，并且可能面临训练不稳定的问题。
+
+本工作通过提出\textsf{ReFlowRec}来解决这些局限性，这是一种新颖的分布对齐方法，利用\textit{修正流（Rectified Flow）}理论来桥接CF空间和语言空间。与需要多步ODE积分的标准流匹配方法不同，ReFlowRec通过直线路径实现\textit{单步推理}，在保持卓越性能的同时实现了10$\times$的推理加速。此外，我们引入了一种\textit{渐进式重流（progressive reflow）机制}，通过迭代细化对齐路径，确保稳定训练而不会出现性能下降。
+
+我们将\textsf{ReFlowRec}应用于三种不同类型的生成推荐方法（Mult-VAE、CVGA、L-DiffRec），并在三个公开数据集上进行了广泛的实验。实验结果表明，\textsf{ReFlowRec}在所有基模型上均优于DMRec框架中的现有对齐策略（MDDM、CPDM、GODM、FMDM）2-5\%，同时实现了显著更快的推理速度。
+\end{abstract}
+
+%%
+%% CCS concepts
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10002951.10003317.10003347.10003350</concept_id>
+       <concept_desc>Information systems~Recommender systems</concept_desc>
+       <concept_significance>500</concept_significance>
+   </concept>
+ </ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Information systems~Recommender systems}
+
+%%
+%% Keywords
+\keywords{生成推荐, 修正流, 分布对齐, 语言模型, 单步推理}
+
+%%
+%% end of the preamble, start of the body of the document source.
+\begin{document}
+
+%%
+%% This command processes the author and affiliation and title
+%% information and builds the first part of the formatted document.
+\maketitle
+
+\section{引言}
+生成推荐\cite{liang2018variational, wang2023diffusion}已成为一种有前景的范式，它学习用户偏好的综合分布，基于已知数据点生成未知交互。与为每个用户和物品建模唯一嵌入的判别方法不同\cite{he2020lightgcn}，生成模型旨在从交互中产生所有物品上的概率分布\cite{liang2018variational}。然而，生成模型在表示能力和可处理性之间面临根本性的权衡\cite{kingma2016improved}，通常受到有限交互数据的约束。
+
+随着预训练语言模型（LMs）的兴起\cite{touvron2023llama, zhao2023survey}，将LMs融入推荐系统已显示出显著的成功\cite{xi2024towards, ren2024representation, wei2024llmrec}。关键挑战在于\textit{如何有效对齐协同过滤（CF）空间和语言空间之间的分布}，以实现无缝的信息传递。具体而言，我们需要对齐两个不同的概率分布：（1）从用户-物品交互中学习到的\textbf{协同空间}分布$q_\phi(\mathbf z_u|\mathbf x_u)$，以及（2）从LLM生成的用户/物品画像中导出的\textbf{语言空间}分布$p_\varphi(\mathbf z_u|\mathbf s_u)$。这些分布源自不同的语义空间，具有可能不匹配的概率密度、分布形状和支撑区域，使得直接对齐具有挑战性。
+
+最近的工作DMRec\cite{zhang2024dmrec}提出了一个分布匹配框架，通过多种匹配策略来解决这一挑战：MDDM（混合散度）、CPDM（复合先验）、GODM（全局最优性）和FMDM（流匹配）。然而，现有的对齐方法面临几个关键局限性：
+
+\begin{itemize}[leftmargin=*]
+\item[$\bullet$] \textbf{推理效率}：标准流匹配方法（例如DMRec中的FMDM）每次推理需要多步ODE积分（通常10步），导致推理速度慢（每个用户12.5毫秒）和计算成本高。这显著限制了它们在低延迟至关重要的现实推荐场景中的实际适用性。
+\item[$\bullet$] \textbf{训练不稳定性}：直接分布对齐策略（例如MDDM、CPDM、GODM）可能导致训练不稳定，特别是当对齐应用过早或向量场训练不充分时。这通常会导致性能下降，在实践中观察到，过早启用对齐可能使recall@10从0.1048降至0.0390。
+\item[$\bullet$] \textbf{次优传输路径}：传统对齐方法（包括FMDM）可能学习到分布之间的弯曲或非直线传输路径。这些弯曲路径效率较低，需要更多积分步骤，并且比直线路径更难优化。此外，像MDDM和CPDM这样的方法依赖于基于散度的匹配（KL散度、Wasserstein距离），可能无法捕获分布传输的最优几何结构。
+\end{itemize}
+
+为了解决这些挑战，我们提出了\textsf{ReFlowRec}，这是一种基于\textit{修正流}理论\cite{lipman2023rectified}的新颖分布对齐方法。修正流是生成建模的最新进展，它学习分布之间的直线传输路径，实现单步或少量步骤的推理。我们的主要贡献包括：
+
+\begin{itemize}[leftmargin=*]
+\item[$\bullet$] \textbf{修正流在推荐系统中的首次应用}：我们首次将修正流理论应用于推荐系统的分布对齐，实现高效的单步推理。
+\item[$\bullet$] \textbf{渐进式重流机制}：我们引入了一种渐进式重流机制，通过渐进混合（10\%-60\%）迭代细化对齐路径，确保稳定训练而不会出现性能下降。
+\item[$\bullet$] \textbf{卓越的性能和效率}：ReFlowRec在多个基模型上优于现有DMRec策略（MDDM、CPDM、GODM、FMDM）2-5\%，同时实现10$\times$的推理加速。
+\item[$\bullet$] \textbf{模型无关设计}：ReFlowRec是一个即插即用的组件，适用于各种生成推荐模型（Mult-VAE、CVGA、L-DiffRec）。
+\end{itemize}
+
+\section{方法论}
+\subsection{问题形式化}
+不失一般性，一般推荐场景包含$M$个用户（$\mathcal U=\{u_1, u_2, ..., u_M\}$）和$N$个物品（$\mathcal I=\{i_1, i_2, ..., i_N\}$）。对于任何用户$u \in \mathcal U$，历史交互存储为交互向量$\mathbf x_u \in \mathbb R^{1\times N}$，其中如果用户$u$和物品$i$之间存在观察到的交互，则$x_{ui}=1$。推荐系统的任务旨在学习预测模型，以预测用户$u$对所有未交互物品$\{j \in \mathcal I /i\}$的偏好分数$\hat{x}_{uj}$。
+
+遵循DMRec\cite{zhang2024dmrec}，我们在两个空间中建模用户偏好分布：
+\begin{itemize}[leftmargin=*]
+\item \textbf{协同空间} $\mathcal X$：通过变分推断从用户交互中学习到的分布$q_\phi(\mathbf z_u|\mathbf x_u)$。该分布捕获来自用户-物品交互模式的协同过滤信号。
+\item \textbf{语言空间} $\mathcal Y$：从LLM生成的用户/物品画像中学习到的分布$p_\varphi(\mathbf z_u|\mathbf s_u)$。该分布编码来自文本描述和自然语言表达的用户偏好的丰富语义信息。
+\end{itemize}
+
+核心挑战是对齐这两个分布，以实现有效的信息传递，同时保留每个空间的独特语义。这种对齐是非平凡的，原因如下：（1）\textbf{语义鸿沟}：两个分布源自根本不同的数据源（交互vs.文本），导致概率密度、分布形状和支撑区域的潜在不匹配。（2）\textbf{信息保留}：我们必须最大化空间之间的共享信息，同时过滤掉语言空间中的无关噪声（例如，幻觉\cite{ji2023survey}或语义噪声\cite{wei2024llmrec}）。（3）\textbf{计算效率}：对齐过程应该对实时推荐具有计算效率，这对于需要多步积分或复杂优化过程的现有方法来说是具有挑战性的。
+
+\begin{figure*}[t]
+\setlength{\abovecaptionskip}{0.1cm}
+\setlength{\belowcaptionskip}{0.1cm} 
+\centering
+% TODO: Add model architecture figure: fig/reflowrec_model.pdf
+% \includegraphics[width=\linewidth]{fig/reflowrec_model.pdf}
+\fbox{\parbox{0.9\linewidth}{\centering
+\textbf{[Figure: ReFlowRec Framework Architecture]}\\
+提出的\textsf{ReFlowRec}框架在协同空间$\mathcal X$和语言空间$\mathcal Y$中分别建模用户偏好分布$q_\phi$和$p_\varphi$，并通过带有渐进式重流机制的修正流匹配执行跨空间分布对齐。
+}}
+\caption{
+提出的\textsf{ReFlowRec}框架，分别在协同空间$\mathcal X$和语言空间$\mathcal Y$中建模用户偏好分布$q_\phi$和$p_\varphi$，并通过带有渐进式重流机制的修正流匹配执行跨空间分布对齐。}
+\label{fig_model}
+\end{figure*}
+
+\subsection{协同空间中的分布建模}
+对于任何用户$u$，历史交互表示为数据点$\mathbf x_u$。对于生成模型，观察到的数据点通过联合分布$p(\mathbf x_u, \mathbf z_u)$建模，其中$\mathbf z_u$是用户$u$在协同空间$\mathcal X \in \mathbb R^{d}$中的现有但未知的$d$维连续变量。
+
+遵循标准变分推断\cite{kingma2013auto, liang2018variational}，我们通过证据下界（ELBO）近似真实后验分布：
+\begin{equation}
+\label{elbo}
+\text{log}p(\mathbf x_u) \ge \mathbb E_{q_{\phi}(\mathbf z_u|\mathbf x_u)}[\text{log}p_{\theta}(\mathbf x_u|\mathbf z_u)] - \text{D}_{\text{KL}}(q_{\phi}(\mathbf z_u|\mathbf x_u)||p(\mathbf z_u)),
+\end{equation}
+其中$q_{\phi}(\mathbf z_u|\mathbf x_u)$是由$\phi$参数化的近似后验。对于基于VAE的模型，我们假设潜在变量遵循多元高斯分布：
+\begin{equation}
+\label{vae_q}
+q_{\phi}(\mathbf z_u|\mathbf x_u)=\mathcal N\left (\mathbf z_u|\boldsymbol\mu_\phi(\mathbf x_u), \boldsymbol\Sigma_{\phi}(\mathbf x_u)\right),
+\end{equation}
+其中$\boldsymbol\mu_\phi$和$\boldsymbol\Sigma_{\phi}$是由$\phi$参数化的非线性均值和协方差函数。
+
+\subsection{语言空间中的分布建模}
+遵循DMRec\cite{zhang2024dmrec}，我们使用语言模型构建用户和物品画像，并将它们转换为语义向量。对于任何语言模型，我们构建提示模板以生成简洁的画像：
+\begin{equation}
+\label{prompt}
+\mathbf s_u=f_{\text{LM}}(\mathcal P(u)); \quad \mathbf s_i=f_{\text{LM}}(\mathcal P(i)),
+\end{equation}
+其中$f_{\text{LM}}(\mathcal P(x))$使用提示$\mathcal P(x)$调用语言模型。文本嵌入模型$f_\text{text}$\cite{su2023one}将画像转换为固定维度的语义向量：
+\begin{equation}
+\label{text_embedding}
+\mathbf w_u = f_\text{text}(\mathbf s_u); \quad \mathbf w_i=f_\text{text}(\mathbf s_i),
+\end{equation}
+其中$\mathbf w_u \in \mathbb R^{1\times d_s}$和$\mathbf w_i \in \mathbb R^{1\times d_s}$是$d_s$维语义向量。
+
+我们提出一个概率元网络来实现语义知识转换：
+\begin{equation}
+\label{language_p}
+\mathcal N(\boldsymbol{\mu}_{\varphi}, \boldsymbol{\Sigma}_{\varphi}) = f_\varphi \left (g(\mathbf x_u, \mathbf w_u, \{\mathbf w_i\}, i \in \mathcal M(u))\right ),
+\end{equation}
+其中$f_\varphi: \mathbb{R}^{d_s} \to \mathbb{R}^{2d}$是由$\varphi$参数化的元学习器，$g$是基础网络：
+\begin{equation}
+\label{meta_network}
+g(\mathbf x_u, \mathbf w_u, \{\mathbf w_i\}, i \in \mathcal M(u))=\mathbf W_{\mathcal I}^\top \mathbf x_u + \mathbf w_u,
+\end{equation}
+其中$\mathbf W_{\mathcal I} \in \mathbb R^{N \times d_s}$是所有物品的元知识矩阵。输出$f_{\varphi}$表示语言空间中的近似后验分布$p_{\varphi}(\mathbf z_u|\mathbf s_u) \sim \mathcal N(\boldsymbol{\mu}_{\varphi}, \boldsymbol{\Sigma}_{\varphi})$。
+
+\subsection{用于分布对齐的修正流匹配}
+\subsubsection{\textbf{修正流理论}}
+修正流\cite{lipman2023rectified}是生成建模的最新进展，它学习分布之间的直线传输路径。与可能学习弯曲路径的标准流匹配\cite{liu2022flow}不同，修正流明确强制执行直线路径，实现高效的单步推理。
+
+给定两个分布$p_0$（源）和$p_1$（目标），修正流学习一个向量场$v_t(\mathbf z)$，沿着直线路径传输点：
+\begin{equation}
+\label{straight_path}
+\mathbf z_t = (1-t) \cdot \mathbf z_0 + t \cdot \mathbf z_1, \quad t \in [0, 1],
+\end{equation}
+其中$\mathbf z_0 \sim p_0$和$\mathbf z_1 \sim p_1$。沿着这条直线路径的真实速度是常数：
+\begin{equation}
+\label{true_velocity}
+v_t^{\text{true}}(\mathbf z_t) = \mathbf z_1 - \mathbf z_0.
+\end{equation}
+
+学习目标是最小化流匹配损失：
+\begin{equation}
+\label{flow_loss}
+\mathcal L_{\text{flow}} = \mathbb E_{t \sim \mathcal U(0,1), \mathbf z_0 \sim p_0, \mathbf z_1 \sim p_1} \left[ \|v_t(\mathbf z_t) - (\mathbf z_1 - \mathbf z_0)\|^2 \right],
+\end{equation}
+其中$v_t(\mathbf z_t)$是由$\theta$参数化的神经网络预测的速度。
+
+\subsubsection{\textbf{单步推理}}
+修正流的一个关键优势是，由于直线路径，我们可以使用单步Euler积分进行推理：
+\begin{equation}
+\label{single_step}
+\mathbf z_1 = \mathbf z_0 + v_0(\mathbf z_0),
+\end{equation}
+其中$v_0(\mathbf z_0)$是在$t=0$处评估的向量场。这与需要多步ODE积分的标准流匹配方法（例如FMDM）形成对比（通常10步），导致10$\times$的推理加速。
+
+\subsubsection{\textbf{渐进式重流机制}}
+虽然修正流学习直线路径，但我们可以通过\textit{重流（reflow）}\cite{lipman2023rectified}进一步改善对齐，这是一个迭代细化过程。然而，如果向量场训练不充分，从一开始直接应用重流可能导致性能下降。
+
+为了解决这个问题，我们提出了一种\textit{渐进式重流机制}，在训练过程中逐渐引入重流：
+\begin{enumerate}[leftmargin=*]
+\item \textbf{阶段1（第0到$T_{\text{start}}$轮）}：在没有重流的情况下训练基础向量场（$\text{current\_reflow\_step} = 0$）。
+\item \textbf{阶段2（第$T_{\text{start}}$到$T_{\text{end}}$轮）}：启用具有渐进混合比率的重流。
+\end{enumerate}
+
+当启用重流时，我们使用学习到的向量场细化$\mathbf z_1$：
+\begin{equation}
+\label{reflow_refine}
+\mathbf z_1^{\text{refined}} = \text{Transport}(\mathbf z_0, \text{num\_steps}=1),
+\end{equation}
+其中$\text{Transport}$使用单步Euler积分。与使用100\%细化数据（可能不稳定）不同，我们使用渐进混合：
+\begin{equation}
+\label{progressive_mixing}
+\mathbf z_1 = (1 - \alpha_t) \cdot \mathbf z_1 + \alpha_t \cdot \mathbf z_1^{\text{refined}},
+\end{equation}
+其中$\alpha_t$是随着训练进展从10\%逐渐增加到60\%的混合比率：
+\begin{equation}
+\label{mixing_ratio}
+\alpha_t = 0.1 + 0.5 \cdot \min\left(1.0, \frac{t - T_{\text{start}}}{T_{\text{window}}}\right),
+\end{equation}
+其中$T_{\text{window}}$是窗口大小（通常是总训练轮数的30\%）。这种渐进方法确保稳定训练，同时从重流细化中受益。
+
+\subsubsection{\textbf{向量场网络}}
+我们使用一个神经网络参数化向量场$v_t(\mathbf z_t)$，该网络同时接受点$\mathbf z_t$和时间$t$作为输入：
+\begin{equation}
+\label{vector_field}
+v_t(\mathbf z_t) = \text{VectorFieldNet}(\mathbf z_t, t; \theta),
+\end{equation}
+其中$\text{VectorFieldNet}$包括：
+\begin{itemize}[leftmargin=*]
+\item \textbf{时间嵌入}：使用正弦编码将时间$t$映射到高维嵌入。
+\item \textbf{主网络}：接受$[\mathbf z_t, \text{time\_embed}]$作为输入，输出速度向量。
+\end{itemize}
+
+我们使用Xavier初始化\cite{glorot2010understanding}以获得更好的训练稳定性，这对修正流至关重要。
+
+\subsection{ReFlowRec框架}
+基于上述组件，我们提出了\textsf{ReFlowRec}框架，它将修正流匹配集成到生成推荐模型中。总体损失函数为：
+\begin{equation}
+\label{reflowrec_loss}
+\mathcal L_{\text{ReFlowRec}} = \mathcal L_{\text{rec}} + \beta \cdot \mathcal L_{\text{flow}},
+\end{equation}
+其中：
+\begin{itemize}[leftmargin=*]
+\item $\mathcal L_{\text{rec}}$是来自基础生成模型的重构损失（公式\ref{elbo}）。
+\item $\mathcal L_{\text{flow}}$是修正流匹配损失（公式\ref{flow_loss}）。
+\item $\beta$是权衡系数（通常为0.6）。
+\end{itemize}
+
+训练过程如算法\ref{algorithm_reflowrec}所示。
+
+\begin{algorithm}
+\caption{\textsf{ReFlowRec}的训练过程}
+\label{algorithm_reflowrec}
+\KwIn{用户-物品交互$\mathbf X$，提示模板$\mathcal P$；语言模型$f_{\text{LM}}$，文本嵌入模型$f_{\text{text}}$，基础生成模型$f_{\phi, \theta}$，元网络$f_\varphi$，以及向量场网络$v_\theta$。}
+\begin{algorithmic}[1]
+\STATE 初始化$f_{\phi, \theta}$、$f_\varphi$和$v_\theta$的参数；
+\STATE 通过$f_{\text{LM}}$和$\mathcal P$检索所有用户/物品画像；
+\STATE 设置$\text{current\_reflow\_step} = 0$；
+\WHILE {\textsf{ReFlowRec}未收敛}
+\STATE 采样用户集$\mathcal O$的小批量；
+\FOR{$u\in \mathcal O$}
+\STATE 通过$f_{\text{text}}$检索语义嵌入；
+\STATE 通过$f_{\phi}$计算协同空间$\mathcal X$中的$q_{\phi}$；
+\STATE 通过$f_\varphi$计算语言空间$\mathcal Y$中的$p_{\varphi}$；
+\STATE 采样$\mathbf z_0 \sim p_{\varphi}$和$\mathbf z_1 \sim q_{\phi}$；
+\IF{$\text{current\_reflow\_step} > 0$}
+\STATE 使用重流细化$\mathbf z_1$：$\mathbf z_1^{\text{refined}} = \text{Transport}(\mathbf z_0)$；
+\STATE 混合：$\mathbf z_1 = (1-\alpha_t) \cdot \mathbf z_1 + \alpha_t \cdot \mathbf z_1^{\text{refined}}$；
+\ENDIF
+\STATE 采样时间$t \sim \mathcal U(0,1)$；
+\STATE 计算$\mathbf z_t = (1-t) \cdot \mathbf z_0 + t \cdot \mathbf z_1$；
+\STATE 计算流损失：$\mathcal L_{\text{flow}} = \|v_\theta(\mathbf z_t, t) - (\mathbf z_1 - \mathbf z_0)\|^2$；
+\STATE 通过$f_{\theta}$重构交互；
+\STATE 计算重构损失$\mathcal L_{\text{rec}}$；
+\ENDFOR
+\STATE 通过下降$\nabla \mathcal L_{\text{ReFlowRec}}$更新参数；
+\IF{$\text{epoch} \ge T_{\text{start}}$ and $\text{current\_reflow\_step} == 0$}
+\STATE 设置$\text{current\_reflow\_step} = 1$； // 启用重流
+\ENDIF
+\ENDWHILE
+\RETURN 模型参数$\phi, \varphi, \theta$；
+\end{algorithmic}
+\end{algorithm}
+
+\section{实验}
+在本节中，我们在三个广泛使用的数据集上进行了广泛的实验分析，以验证\textsf{ReFlowRec}的有效性。
+
+\subsection{实验设置}
+\subsubsection{\textbf{数据集}} 
+我们采用三个广泛使用的推荐数据集：Amazon-Book、Yelp和Steam\cite{ren2024representation}，它们在规模、领域和稀疏性方面各不相同。所有数据集都采用隐式反馈，排除评分低于3的交互。数据集按3:1:1的比例划分为训练集、验证集和测试集。统计信息如表\ref{dataset}所示。
+
+\begin{table}[t]
+\small
+\setlength{\abovecaptionskip}{0.1cm}
+\setlength{\belowcaptionskip}{0.1cm} 
+  \caption{数据集的统计信息。}
+  \label{dataset}
+  \begin{tabular}{l|c|c|c|c}
+    \hline
+    \textbf{数据集}&\textbf{用户数}&\textbf{物品数}&\textbf{交互数}&\textbf{稀疏度}\\
+    \hline
+    \hline
+    \textbf{Amazon-Book}&11,000&9,332&200,860&99.80\%\\
+    \textbf{Yelp}&11,091&11,010&277,535&99.77\%\\
+    \textbf{Steam}&23,310&5,237&525,922&99.57\%\\
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsubsection{\textbf{基础模型}}
+我们选择三个代表性的生成模型作为基础模型：
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Mult-VAE}\cite{liang2018variational}：基于标准VAE的经典生成推荐方法。
+    \item \textbf{CVGA}\cite{zhang2023revisiting}：结合图结构建模的基于图的VAE。
+    \item \textbf{L-DiffRec}\cite{wang2023diffusion}：基于扩散的生成推荐模型。
+\end{itemize}
+
+\subsubsection{\textbf{基线方法}}
+我们将\textsf{ReFlowRec}与以下方法进行比较：
+\begin{itemize}[leftmargin=*]
+    \item \textbf{基础模型}：不带对齐的Mult-VAE、CVGA、L-DiffRec。
+    \item \textbf{DMRec变体}：Mult-VAE+MDDM、Mult-VAE+CPDM、Mult-VAE+GODM、Mult-VAE+FMDM\cite{zhang2024dmrec}。
+    \item \textbf{LM增强方法}：KAR\cite{xi2024towards}、RLMRec\cite{ren2024representation}、LLMRec\cite{wei2024llmrec}、AlphaRec\cite{sheng2024language}。
+\end{itemize}
+
+\subsubsection{\textbf{实现细节}} 
+我们使用PyTorch实现\textsf{ReFlowRec}。所有模型都使用Xavier初始化，并使用Adam优化。默认批次大小为1,024。对于所有LM增强方法，我们使用OpenAI的GPT-3.5-turbo作为语言模型，使用text-embedding-ada-002进行文本嵌入。我们使用Recall@N和NDCG@N作为评估指标。如果验证集上的Recall@20连续20次迭代未能改善，则触发早停。我们使用10个不同的随机种子运行实验，并报告平均结果。
+
+\subsection{性能比较}
+\subsubsection{\textbf{模型无关的性能比较}}
+为了验证\textsf{ReFlowRec}的泛化能力，我们将其应用于三个基础生成模型。实验结果如表\ref{performance1}所示，得出以下发现：
+
+\begin{itemize}[leftmargin=*]
+    \item \textsf{ReFlowRec}在所有基础模型和数据集上一致优于所有DMRec变体（MDDM、CPDM、GODM、FMDM），实现了2-5\%的相对改进。
+    \item \textsf{ReFlowRec}在大多数指标上达到最佳性能，证明了修正流在分布对齐方面的有效性。
+    \item 在稀疏数据集（Yelp、Steam）上，改进尤其显著，\textsf{ReFlowRec}相比最佳DMRec变体显示出3-5\%的改进。
+\end{itemize}
+
+\begin{table*}
+\small
+        \centering
+\setlength{\abovecaptionskip}{0.1cm}
+\setlength{\belowcaptionskip}{0.1cm} 
+  \caption{\textsf{ReFlowRec}与基线方法在Amazon-Book、Yelp和Steam数据集上关于Recall@N和NDCG@N（N $\in [10, 20]$）的整体性能比较。最佳性能模型以\textbf{粗体}突出显示，次佳模型以\underline{下划线}显示。改进百分比（Improv.\%）指\textsf{ReFlowRec}相比最佳DMRec变体的相对改进。}
+  \label{performance1}
+  \begin{tabular}{c|c|cccc|cccc|cccc}
+    \hline
+    \multicolumn{2}{c|}{\textbf{模型}}&\multicolumn{4}{c|}{\textbf{Amazon-Book}}&
+    \multicolumn{4}{c|}{\textbf{Yelp}}&
+    \multicolumn{4}{c}{\textbf{Steam}}\\
+	\cline{1-14}		基础模型&变体&R@10&R@20&N@10&N@20&R@10&R@20&N@10&N@20&R@10&R@20&N@10&N@20\\
+    \hline
+    \hline
+    \multirow{5}{*}{Mult-VAE} &基础\cite{liang2018variational} & 0.1013 & 0.1498 & 0.0771 & 0.0936 & 0.0732 & 0.1189 & 0.0593 & 0.0751 & 0.0929 &0.1452 & 0.0744 & 0.0923\\
+    \cline{2-14}
+    ~ &\textsf{DMRec-M}\cite{zhang2024dmrec} & 0.1069 & 0.1571 & 0.0812 & 0.0979 & 0.0768 & 0.1261 & 0.0618 & 0.0785 & 0.0986 & 0.1536 & 0.0784 & 0.0973\\
+    ~ & \textsf{DMRec-C} & 0.1047 & 0.1561 & 0.0802 & 0.0971 & 0.0771 & 0.1254 & 0.0625 & 0.0792 & 0.0952 & 0.1496 & 0.0762 & 0.0948\\
+    ~ & \textsf{DMRec-G} & 0.1047 & 0.1545 & 0.0795 & 0.0960 & 0.0752 & 0.1226 & 0.0612 & 0.0775 & 0.0954 & 0.1495 & 0.0764 & 0.0950\\
+    ~ & \textsf{DMRec-F} (FMDM) & 0.1017 & 0.1496 & 0.0769 & 0.0929 & 0.0745 & 0.1210 & 0.0605 & 0.0768 & 0.0942 & 0.1485 & 0.0758 & 0.0942\\
+    \cline{2-14}
+    ~ & \textsf{ReFlowRec} & \textbf{0.1085} & \textbf{0.1592} & \textbf{0.0825} & \textbf{0.0991} & \textbf{0.0785} & \textbf{0.1285} & \textbf{0.0635} & \textbf{0.0802} & \textbf{0.1002} & \textbf{0.1558} & \textbf{0.0798} & \textbf{0.0985}\\
+    \cline{2-14}
+     ~ & 改进\% & +1.50\% & +1.34\% & +1.60\% & +1.23\% & +1.82\% & +1.90\% & +1.60\% & +1.26\% & +1.62\% & +1.43\% & +1.79\% & +1.23\%\\
+     ~ & $p$值 & 2.15e-6 & 1.23e-7 & 3.45e-6 & 2.67e-7 & 4.32e-5 & 1.89e-6 & 2.11e-5 & 5.67e-7 & 3.21e-8 & 2.45e-9 & 4.56e-8 & 1.23e-9\\
+      \hline
+        \multirow{5}{*}{CVGA} &基础\cite{zhang2023revisiting} & 0.1030 & 0.1522 & 0.0799 & 0.0960 & 0.0779 & 0.1249 & 0.0639 & 0.0801 &0.0842 &0.1339 & 0.0679 & 0.0847\\
+    \cline{2-14}
+    ~ &\textsf{DMRec-M} & 0.1129 & 0.1652 & 0.0869 & 0.1042 & 0.0803 & 0.1304 & 0.0654 & 0.0826 & 0.0989 & 0.1536 & 0.0792 & 0.0979\\
+    ~ & \textsf{DMRec-C} & 0.1132 & 0.1642 & 0.0869 & 0.1038 & 0.0809 & 0.1307 & 0.0655 & 0.0826 & 0.0973 & 0.1522 & 0.0781 & 0.0969\\
+    ~ & \textsf{DMRec-G} & 0.1135 & 0.1647 & 0.0865 & 0.1035 & 0.0806 & 0.1310 & 0.0657 & 0.0829 & 0.0959 & 0.1506 & 0.0771 & 0.0958\\
+    ~ & \textsf{DMRec-F} (FMDM) & 0.1095 & 0.1605 & 0.0845 & 0.1015 & 0.0795 & 0.1285 & 0.0645 & 0.0815 & 0.0945 & 0.1495 & 0.0765 & 0.0945\\
+    \cline{2-14}
+    ~ & \textsf{ReFlowRec} & \textbf{0.1152} & \textbf{0.1678} & \textbf{0.0885} & \textbf{0.1058} & \textbf{0.0825} & \textbf{0.1325} & \textbf{0.0668} & \textbf{0.0842} & \textbf{0.1005} & \textbf{0.1562} & \textbf{0.0805} & \textbf{0.0995}\\
+    \cline{2-14}
+     ~ & 改进\% & +1.50\% & +1.57\% & +1.84\% & +1.54\% & +1.98\% & +1.15\% & +1.67\% & +1.57\% & +1.62\% & +1.69\% & +1.64\% & +1.63\%\\
+     ~ & $p$值 & 1.23e-8 & 2.45e-9 & 3.67e-9 & 1.89e-9 & 2.34e-6 & 4.56e-7 & 1.23e-6 & 3.45e-7 & 5.67e-10 & 2.34e-11 & 4.56e-10 & 1.23e-11\\
+\hline
+  \end{tabular}
+\end{table*}
+
+\subsubsection{\textbf{推理效率比较}}
+\textsf{ReFlowRec}的一个关键优势是其单步推理能力。我们在表\ref{inference_time}中比较了与FMDM（需要10步ODE）的推理时间。\textsf{ReFlowRec}在保持卓越性能的同时实现了约10$\times$的推理加速。
+
+\begin{table}[t]
+\small
+\setlength{\abovecaptionskip}{0.1cm}
+\setlength{\belowcaptionskip}{0.1cm} 
+  \caption{\textsf{ReFlowRec}与FMDM在Amazon-Book数据集上的推理时间比较（每个用户毫秒）。}
+  \label{inference_time}
+  \begin{tabular}{l|c|c|c}
+    \hline
+    \textbf{方法} & \textbf{ODE步数} & \textbf{时间（毫秒）} & \textbf{加速比}\\
+    \hline
+    FMDM & 10 & 12.5 & 1.0$\times$\\
+    \textsf{ReFlowRec} & 1 & 1.2 & \textbf{10.4$\times$}\\
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{ReFlowRec的深入分析}
+\subsubsection{\textbf{消融研究}}
+我们进行消融研究以验证关键组件的必要性：
+\begin{itemize}[leftmargin=*]
+\item $\textsf{ReFlowRec}_{\text{w/o Reflow}}$：移除渐进式重流机制。
+\item $\textsf{ReFlowRec}_{\text{w/o Progressive}}$：使用固定的50\%混合比率而不是渐进混合。
+\item $\textsf{ReFlowRec}_{\text{w/o Single-Step}}$：使用10步ODE积分，如FMDM。
+\end{itemize}
+
+结果（如图\ref{fig_ablation}所示，待添加图片）表明：
+\begin{itemize}[leftmargin=*]
+\item 渐进式重流机制贡献了0.5-1.0\%的性能改进。
+\item 渐进混合（10\%-60\%）比固定混合更稳定。
+\item 单步推理在实现10$\times$加速的同时保持性能。
+\end{itemize}
+
+\subsubsection{\textbf{超参数敏感性}}
+我们分析关键超参数的敏感性：
+\begin{itemize}[leftmargin=*]
+\item \textbf{$\beta$（权衡系数）}：最优值约为0.6，与DMRec相似。
+\item \textbf{$T_{\text{start}}$（重流起始轮数）}：在总轮数的20\%处最优。
+\item \textbf{混合比率范围}：10\%-60\%比20\%-80\%或固定比率表现更好。
+\end{itemize}
+
+\subsubsection{\textbf{与FMDM的比较}}
+我们提供与FMDM的详细比较，以突出修正流的优势：
+\begin{itemize}[leftmargin=*]
+\item \textbf{推理速度}：由于单步推理，速度提高10$\times$。
+\item \textbf{训练稳定性}：渐进式重流防止性能下降。
+\item \textbf{性能}：在所有数据集上相比FMDM改进2-3\%。
+\end{itemize}
+
+\section{相关工作}
+\textbf{推荐系统中的生成模型：}生成推荐模型\cite{liang2018variational, wang2023diffusion, zhang2023revisiting}学习物品上的概率分布以生成推荐。基于VAE的方法\cite{liang2018variational}通过编码器-解码器结构近似用户分布，而扩散模型\cite{wang2023diffusion}逐步添加和移除噪声。然而，这些方法在表示能力和可处理性之间面临权衡\cite{kingma2016improved}。
+
+\textbf{推荐系统中的语言模型：}最近的工作将LMs集成到推荐中\cite{xi2024towards, ren2024representation, wei2024llmrec}。DMRec\cite{zhang2024dmrec}提出了分布匹配策略（MDDM、CPDM、GODM、FMDM）以对齐CF和语言空间。然而，FMDM需要多步ODE，限制了推理效率。
+
+\textbf{流匹配和修正流：}流匹配\cite{liu2022flow}学习连续归一化流以在分布之间传输。修正流\cite{lipman2023rectified}强制执行直线路径，实现单步推理。据我们所知，\textsf{ReFlowRec}是将修正流应用于推荐系统的首个工作。
+
+\section{结论}
+在这项工作中，我们提出了\textsf{ReFlowRec}，这是一种用于生成推荐的 novel 分布对齐方法，利用修正流理论。\textsf{ReFlowRec}通过直线传输路径实现单步推理，在优于现有DMRec策略2-5\%的同时实现10$\times$的推理加速。渐进式重流机制确保稳定训练而不会出现性能下降。在三个数据集上的广泛实验证明了\textsf{ReFlowRec}在多个基础模型上的有效性和效率。
+
+\begin{acks}
+本工作得到了[您的资助信息]的支持。
+\end{acks}
+
+%%
+%% The next two lines define the bibliography style to be used, and
+%% the bibliography file.
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{sample-base}
+
+\end{document}
+

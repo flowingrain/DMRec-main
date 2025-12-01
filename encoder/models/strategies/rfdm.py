@@ -111,11 +111,44 @@ class RectifiedFMDMStrategy(object):
 		# Hyperparameters
 		self.beta = hyper.get('beta', 0.6)  # Weight for flow matching alignment regularization
 		self.latent_dim = hyper.get('latent_dim', 200)  # Latent dimension
-		self.use_reflow = hyper.get('use_reflow', False)  # Whether to use reflow refinement
+		self.use_reflow = hyper.get('use_reflow', True)  # Whether to use reflow refinement
 		self.reflow_steps = hyper.get('reflow_steps', 1)  # Number of reflow iterations
+		# Adaptive time sampling: for flow matching training (NOT for reflow enable timing)
+		# - If True: use adaptive time sampling during flow matching loss computation
+		#   Early training: focus on endpoints (t=0 or t=1) to learn boundary conditions
+		#   Later training: uniform sampling to learn full paths
+		# - adaptive_epoch_threshold: fraction of training to use endpoint-focused sampling
+		#   Example: 0.3 means use endpoint sampling for first 30% of training
+		# - This is separate from reflow enable timing (reflow_enable_threshold/reflow_adaptive)
 		self.use_adaptive_sampling = hyper.get('use_adaptive_sampling', False)
-		self.adaptive_epoch_threshold = hyper.get('adaptive_epoch_threshold', 0.3)
+		self.adaptive_epoch_threshold = hyper.get('adaptive_epoch_threshold', 0.3)  # For time sampling, not reflow
 		self.use_residual = hyper.get('use_residual', False)
+		
+		# Reflow auto-enable configuration: two modes available
+		# 
+		# Mode 1: Fixed mode (reflow_adaptive=False)
+		#   - Uses reflow_enable_threshold to enable reflow at a fixed fraction of training
+		#   - Example: reflow_enable_threshold=0.5 means enable at 50% of training epochs
+		#   - Default: 0.5 (auto-enable at mid-training)
+		#   - Rationale: Vector field needs sufficient training before reflow can help
+		#     Too early (< 0.3): vector field not well-trained, may cause performance degradation
+		#     Too late (> 0.8): less time for reflow to improve alignment
+		#     Mid-training (0.4-0.6): balanced choice, allows vector field to stabilize first
+		#
+		# Mode 2: Adaptive mode (reflow_adaptive=True)
+		#   - Ignores reflow_enable_threshold
+		#   - Automatically determines when to enable reflow based on training metrics
+		#   - Criteria:
+		#     1. Minimum 30% of training completed (vector field needs time to train)
+		#     2. Maximum 80% of training (to leave time for reflow to help)
+		#     3. Recall has improved and is relatively stable (model is converging)
+		#     4. Flow loss is relatively stable (vector field is well-trained)
+		#
+		# Note: reflow_enable_threshold is still needed for fixed mode (when reflow_adaptive=False)
+		# This parameter is only used in RFDM strategy, not in config files
+		# Users can override by setting reflow_enable_threshold in config file
+		self.reflow_enable_threshold = hyper.get('reflow_enable_threshold', 0.2)  # Default: 20% of training (increased from 10% for better vector field training)
+		self.reflow_adaptive = hyper.get('reflow_adaptive', False)  # Default: fixed mode
 		
 		# Initialize vector field network
 		hidden_dims = hyper.get('flow_hidden_dims', [256, 256])
@@ -129,17 +162,23 @@ class RectifiedFMDMStrategy(object):
 		
 		# Reflow state: track current reflow iteration
 		# Standard Reflow: Train base vector field first (step=0), then use reflow to refine data (step>0)
-		# If use_reflow=True and reflow_start_step is not explicitly set, default to enabling reflow
-		# If reflow_start_step is explicitly set to 0, use two-phase training (recommended)
+		# IMPORTANT: Reflow should be used in two-phase training:
+		#   Phase 1: current_reflow_step=0 (train base vector field)
+		#   Phase 2: current_reflow_step=1 (use trained vector field for reflow)
+		# Default behavior: use two-phase training (reflow_start_step=0) for stability
 		if 'reflow_start_step' in hyper:
 			# Explicitly set in config
 			reflow_start_step = hyper.get('reflow_start_step', 0)
 		else:
-			# Not set in config: if use_reflow=True, default to enabling reflow
-			reflow_start_step = 1 if self.use_reflow else 0
+			# Not set in config: default to two-phase training (reflow_start_step=0)
+			# This ensures stable training - vector field is trained before reflow is used
+			reflow_start_step = 0
 		
 		if self.use_reflow and reflow_start_step > 0:
 			self.current_reflow_step = reflow_start_step  # Start with reflow enabled
+			print(f"[WARNING] Reflow is enabled from the start (reflow_start_step={reflow_start_step}).")
+			print(f"[WARNING] This may cause performance degradation if vector field is not well-trained.")
+			print(f"[WARNING] Recommended: use two-phase training (reflow_start_step=0, then call update_reflow_step(1) after training)")
 		else:
 			self.current_reflow_step = 0  # Start without reflow (standard two-phase mode)
 		
@@ -148,6 +187,8 @@ class RectifiedFMDMStrategy(object):
 			'reflow_steps': self.reflow_steps,
 			'reflow_start_step': reflow_start_step,
 			'current_reflow_step': self.current_reflow_step,
+			'reflow_enable_threshold': self.reflow_enable_threshold,
+			'reflow_adaptive': self.reflow_adaptive,
 			'use_adaptive_sampling': self.use_adaptive_sampling,
 			'adaptive_epoch_threshold': self.adaptive_epoch_threshold,
 			'use_residual': self.use_residual,
@@ -278,19 +319,36 @@ class RectifiedFMDMStrategy(object):
 				ode_steps = 1  # Always use 1 step, regardless of reflow_steps setting
 				z_1_refined = self.transport_sample(z_0, num_steps=ode_steps)
 			
-			# Standard mode: use 100% refined data (after first training phase)
-			# The vector field is already trained, so we can fully trust the refined z_1
+			# Progressive mixing mode: gradually increase the ratio of refined data
+			# This is more stable than using 100% refined data, especially when vector field is not fully trained
+			# Mix ratio starts small and increases with training progress
+			# If epoch information is available, use it to adjust mix ratio
+			if epoch_idx is not None and max_epoch is not None:
+				# Calculate reflow start epoch from threshold
+				reflow_start_epoch = int(max_epoch * self.reflow_enable_threshold)
+				# Progressive: start with 10% refined data (more conservative), gradually increase to 60% as training progresses
+				# This allows the model to adapt to reflow gradually without disrupting training
+				# Progress from reflow start: 0 at start, 1.0 after 30% more training
+				epochs_since_reflow = max(0, epoch_idx - reflow_start_epoch)
+				progress_window = max(1, int(max_epoch * 0.3))  # 30% of total training
+				progress = min(1.0, epochs_since_reflow / progress_window)  # Clamp to [0, 1]
+				mix_ratio = 0.1 + 0.5 * progress  # Range: 0.1 (10%) to 0.6 (60%) - more conservative
+			else:
+				# Fallback: use conservative fixed ratio
+				mix_ratio = 0.2  # 20% refined, 80% original
+			
+			# Mix original z_1 and refined z_1
+			z_1 = (1 - mix_ratio) * z_1 + mix_ratio * z_1_refined
+			
 			# Debug: check if reflow is actually changing z_1
 			z_1_diff = torch.mean(torch.norm(z_1_refined - z_1, dim=1)).item()
 			if hasattr(self, '_reflow_call_count'):
 				self._reflow_call_count += 1
 				if self._reflow_call_count <= 5:  # Print first 5 calls
-					print(f"[DEBUG] Reflow active: z_1_diff={z_1_diff:.6f}, current_reflow_step={self.current_reflow_step}")
+					print(f"[DEBUG] Reflow active: z_1_diff={z_1_diff:.6f}, mix_ratio={mix_ratio:.3f}, current_reflow_step={self.current_reflow_step}")
 			else:
 				self._reflow_call_count = 1
-				print(f"[DEBUG] Reflow activated! z_1_diff={z_1_diff:.6f}, current_reflow_step={self.current_reflow_step}")
-			
-			z_1 = z_1_refined
+				print(f"[DEBUG] Reflow activated! z_1_diff={z_1_diff:.6f}, mix_ratio={mix_ratio:.3f}, current_reflow_step={self.current_reflow_step}")
 		
 		# Sample time t (adaptive or uniform)
 		t = self.sample_time_adaptive(batch_size, device, epoch_idx, max_epoch)

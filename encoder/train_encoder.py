@@ -5,7 +5,7 @@ The recommendation framework adopted is mainly based on https://github.com/HKUDS
 """
 
 from config.configurator import configs
-from trainer.trainer import init_seed
+from trainer import init_seed  # Cleaner import: from trainer import instead of from trainer.trainer
 from models.bulid_model import build_model
 from trainer.logger import Logger
 from data_utils.build_data_handler import build_data_handler

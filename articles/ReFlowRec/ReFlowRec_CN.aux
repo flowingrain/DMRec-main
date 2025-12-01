@@ -1,0 +1,125 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand*\HyPL@Entry[1]{}
+\citation{liang2018variational,wang2023diffusion}
+\citation{he2020lightgcn}
+\citation{liang2018variational}
+\citation{kingma2016improved}
+\citation{touvron2023llama,zhao2023survey}
+\citation{xi2024towards,ren2024representation,wei2024llmrec}
+\citation{zhang2024dmrec}
+\citation{lipman2023rectified}
+\HyPL@Entry{0<</S/D>>}
+\providecommand \oddpage@label [2]{}
+\@writefile{toc}{\contentsline {section}{Abstract}{1}{section*.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {1}引言}{1}{section.1}\protected@file@percent }
+\citation{zhang2024dmrec}
+\citation{ji2023survey}
+\citation{wei2024llmrec}
+\citation{kingma2013auto,liang2018variational}
+\citation{zhang2024dmrec}
+\citation{su2023one}
+\citation{lipman2023rectified}
+\citation{liu2022flow}
+\citation{lipman2023rectified}
+\citation{glorot2010understanding}
+\@writefile{toc}{\contentsline {section}{\numberline {2}方法论}{2}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}问题形式化}{2}{subsection.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}协同空间中的分布建模}{2}{subsection.2.2}\protected@file@percent }
+\newlabel{elbo}{{1}{2}{协同空间中的分布建模}{equation.1}{}}
+\newlabel{vae_q}{{2}{2}{协同空间中的分布建模}{equation.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}语言空间中的分布建模}{2}{subsection.2.3}\protected@file@percent }
+\newlabel{prompt}{{3}{2}{语言空间中的分布建模}{equation.3}{}}
+\newlabel{text_embedding}{{4}{2}{语言空间中的分布建模}{equation.4}{}}
+\newlabel{language_p}{{5}{2}{语言空间中的分布建模}{equation.5}{}}
+\newlabel{meta_network}{{6}{2}{语言空间中的分布建模}{equation.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}用于分布对齐的修正流匹配}{2}{subsection.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.1}\textbf  {修正流理论}}{2}{subsubsection.2.4.1}\protected@file@percent }
+\newlabel{straight_path}{{7}{2}{\textbf {修正流理论}}{equation.7}{}}
+\newlabel{true_velocity}{{8}{2}{\textbf {修正流理论}}{equation.8}{}}
+\newlabel{flow_loss}{{9}{2}{\textbf {修正流理论}}{equation.9}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.2}\textbf  {单步推理}}{2}{subsubsection.2.4.2}\protected@file@percent }
+\newlabel{single_step}{{10}{2}{\textbf {单步推理}}{equation.10}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.3}\textbf  {渐进式重流机制}}{2}{subsubsection.2.4.3}\protected@file@percent }
+\newlabel{reflow_refine}{{11}{2}{\textbf {渐进式重流机制}}{equation.11}{}}
+\newlabel{progressive_mixing}{{12}{2}{\textbf {渐进式重流机制}}{equation.12}{}}
+\newlabel{mixing_ratio}{{13}{2}{\textbf {渐进式重流机制}}{equation.13}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.4}\textbf  {向量场网络}}{2}{subsubsection.2.4.4}\protected@file@percent }
+\newlabel{vector_field}{{14}{2}{\textbf {向量场网络}}{equation.14}{}}
+\citation{ren2024representation}
+\citation{liang2018variational}
+\citation{zhang2023revisiting}
+\citation{wang2023diffusion}
+\citation{zhang2024dmrec}
+\citation{xi2024towards}
+\citation{ren2024representation}
+\citation{wei2024llmrec}
+\citation{sheng2024language}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces  提出的\textsf  {ReFlowRec}框架，分别在协同空间$\mathcal  X$和语言空间$\mathcal  Y$中建模用户偏好分布$q_\phi $和$p_\varphi $，并通过带有渐进式重流机制的修正流匹配执行跨空间分布对齐。}}{3}{figure.caption.5}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig_model}{{1}{3}{提出的\textsf {ReFlowRec}框架，分别在协同空间$\mathcal X$和语言空间$\mathcal Y$中建模用户偏好分布$q_\phi $和$p_\varphi $，并通过带有渐进式重流机制的修正流匹配执行跨空间分布对齐。}{figure.caption.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}ReFlowRec框架}{3}{subsection.2.5}\protected@file@percent }
+\newlabel{reflowrec_loss}{{15}{3}{ReFlowRec框架}{equation.15}{}}
+\@writefile{loa}{\contentsline {algocf}{\numberline {1}{\ignorespaces \textsf  {ReFlowRec}的训练过程}}{3}{algocf.1}\protected@file@percent }
+\newlabel{algorithm_reflowrec}{{1}{3}{ReFlowRec框架}{algocf.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces 数据集的统计信息。}}{3}{table.caption.7}\protected@file@percent }
+\newlabel{dataset}{{1}{3}{数据集的统计信息。}{table.caption.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}实验}{3}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}实验设置}{3}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.1}\textbf  {数据集}}{3}{subsubsection.3.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.2}\textbf  {基础模型}}{3}{subsubsection.3.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.3}\textbf  {基线方法}}{3}{subsubsection.3.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.4}\textbf  {实现细节}}{3}{subsubsection.3.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}性能比较}{3}{subsection.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}\textbf  {模型无关的性能比较}}{3}{subsubsection.3.2.1}\protected@file@percent }
+\citation{liang2018variational}
+\citation{zhang2024dmrec}
+\citation{zhang2023revisiting}
+\citation{liang2018variational,wang2023diffusion,zhang2023revisiting}
+\citation{liang2018variational}
+\citation{wang2023diffusion}
+\citation{kingma2016improved}
+\citation{xi2024towards,ren2024representation,wei2024llmrec}
+\citation{zhang2024dmrec}
+\citation{liu2022flow}
+\citation{lipman2023rectified}
+\bibstyle{ACM-Reference-Format}
+\bibdata{sample-base}
+\bibcite{glorot2010understanding}{{1}{2010}{{Glorot and Bengio}}{{}}}
+\bibcite{he2020lightgcn}{{2}{2020}{{He et~al\mbox  {.}}}{{}}}
+\bibcite{ji2023survey}{{3}{2023}{{Ji et~al\mbox  {.}}}{{}}}
+\bibcite{kingma2016improved}{{4}{2016}{{Kingma et~al\mbox  {.}}}{{}}}
+\bibcite{kingma2013auto}{{5}{2013}{{Kingma and Welling}}{{}}}
+\bibcite{liang2018variational}{{6}{2018}{{Liang et~al\mbox  {.}}}{{}}}
+\bibcite{lipman2023rectified}{{7}{2023}{{Lipman et~al\mbox  {.}}}{{}}}
+\bibcite{liu2022flow}{{8}{2022}{{Liu et~al\mbox  {.}}}{{}}}
+\bibcite{ren2024representation}{{9}{2024}{{Ren et~al\mbox  {.}}}{{}}}
+\bibcite{sheng2024language}{{10}{2025}{{Sheng et~al\mbox  {.}}}{{}}}
+\bibcite{su2023one}{{11}{2023}{{Su et~al\mbox  {.}}}{{}}}
+\bibcite{touvron2023llama}{{12}{2023}{{Touvron et~al\mbox  {.}}}{{}}}
+\bibcite{wang2023diffusion}{{13}{2023}{{Wang et~al\mbox  {.}}}{{}}}
+\bibcite{wei2024llmrec}{{14}{2024}{{Wei et~al\mbox  {.}}}{{}}}
+\bibcite{xi2024towards}{{15}{2024}{{Xi et~al\mbox  {.}}}{{}}}
+\bibcite{zhang2024dmrec}{{16}{2025}{{Zhang et~al\mbox  {.}}}{{}}}
+\bibcite{zhang2023revisiting}{{17}{2023}{{Zhang et~al\mbox  {.}}}{{}}}
+\bibcite{zhao2023survey}{{18}{2023}{{Zhao et~al\mbox  {.}}}{{}}}
+\newlabel{tocindent-1}{0pt}
+\newlabel{tocindent0}{0pt}
+\newlabel{tocindent1}{4.626pt}
+\newlabel{tocindent2}{11.826pt}
+\newlabel{tocindent3}{22.113pt}
+\newlabel{tocindent4}{0pt}
+\newlabel{tocindent5}{0pt}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.2}\textbf  {推理效率比较}}{4}{subsubsection.3.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}ReFlowRec的深入分析}{4}{subsection.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.3.1}\textbf  {消融研究}}{4}{subsubsection.3.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.3.2}\textbf  {超参数敏感性}}{4}{subsubsection.3.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.3.3}\textbf  {与FMDM的比较}}{4}{subsubsection.3.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}相关工作}{4}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}结论}{4}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{Acknowledgments}{4}{section*.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{References}{4}{section*.13}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces \textsf  {ReFlowRec}与基线方法在Amazon-Book、Yelp和Steam数据集上关于Recall@N和NDCG@N（N $\in [10, 20]$）的整体性能比较。最佳性能模型以\textbf  {粗体}突出显示，次佳模型以\underline  {下划线}显示。改进百分比（Improv.\%）指\textsf  {ReFlowRec}相比最佳DMRec变体的相对改进。}}{5}{table.caption.8}\protected@file@percent }
+\newlabel{performance1}{{2}{5}{\textsf {ReFlowRec}与基线方法在Amazon-Book、Yelp和Steam数据集上关于Recall@N和NDCG@N（N $\in [10, 20]$）的整体性能比较。最佳性能模型以\textbf {粗体}突出显示，次佳模型以\underline {下划线}显示。改进百分比（Improv.\%）指\textsf {ReFlowRec}相比最佳DMRec变体的相对改进。}{table.caption.8}{}}
+\newlabel{TotPages}{{6}{6}{}{page.6}{}}
+\gdef \@abspage@last{6}

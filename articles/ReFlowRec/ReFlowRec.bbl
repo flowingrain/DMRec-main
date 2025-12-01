@@ -1,0 +1,273 @@
+%%% -*-BibTeX-*-
+%%% Do NOT edit. File created by BibTeX with style
+%%% ACM-Reference-Format-Journals [18-Jan-2012].
+
+\begin{thebibliography}{18}
+
+%%% ====================================================================
+%%% NOTE TO THE USER: you can override these defaults by providing
+%%% customized versions of any of these macros before the \bibliography
+%%% command.  Each of them MUST provide its own final punctuation,
+%%% except for \shownote{}, \showDOI{}, and \showURL{}.  The latter two
+%%% do not use final punctuation, in order to avoid confusing it with
+%%% the Web address.
+%%%
+%%% To suppress output of a particular field, define its macro to expand
+%%% to an empty string, or better, \unskip, like this:
+%%%
+%%% \newcommand{\showDOI}[1]{\unskip}   % LaTeX syntax
+%%%
+%%% \def \showDOI #1{\unskip}           % plain TeX syntax
+%%%
+%%% ====================================================================
+
+\ifx \showCODEN    \undefined \def \showCODEN     #1{\unskip}     \fi
+\ifx \showDOI      \undefined \def \showDOI       #1{#1}\fi
+\ifx \showISBNx    \undefined \def \showISBNx     #1{\unskip}     \fi
+\ifx \showISBNxiii \undefined \def \showISBNxiii  #1{\unskip}     \fi
+\ifx \showISSN     \undefined \def \showISSN      #1{\unskip}     \fi
+\ifx \showLCCN     \undefined \def \showLCCN      #1{\unskip}     \fi
+\ifx \shownote     \undefined \def \shownote      #1{#1}          \fi
+\ifx \showarticletitle \undefined \def \showarticletitle #1{#1}   \fi
+\ifx \showURL      \undefined \def \showURL       {\relax}        \fi
+% The following commands are used for tagged output and should be
+% invisible to TeX
+\providecommand\bibfield[2]{#2}
+\providecommand\bibinfo[2]{#2}
+\providecommand\natexlab[1]{#1}
+\providecommand\showeprint[2][]{arXiv:#2}
+
+\bibitem[Glorot and Bengio(2010)]%
+        {glorot2010understanding}
+\bibfield{author}{\bibinfo{person}{Xavier Glorot} {and} \bibinfo{person}{Yoshua
+  Bengio}.} \bibinfo{year}{2010}\natexlab{}.
+\newblock \showarticletitle{Understanding the Difficulty of Training Deep
+  Feedforward Neural Networks}. In \bibinfo{booktitle}{\emph{Proceedings of the
+  Thirteenth International Conference on Artificial Intelligence and Statistics
+  (ICAIS)}}. \bibinfo{pages}{249--256}.
+\newblock
+
+
+\bibitem[He et~al\mbox{.}(2020)]%
+        {he2020lightgcn}
+\bibfield{author}{\bibinfo{person}{Xiangnan He}, \bibinfo{person}{Kuan Deng},
+  \bibinfo{person}{Xiang Wang}, \bibinfo{person}{Yan Li},
+  \bibinfo{person}{Yongdong Zhang}, {and} \bibinfo{person}{Meng Wang}.}
+  \bibinfo{year}{2020}\natexlab{}.
+\newblock \showarticletitle{Lightgcn: Simplifying and powering graph
+  convolution network for recommendation}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the 43rd International ACM SIGIR
+  Conference on Research and Development in Information Retrieval}}.
+  \bibinfo{pages}{639--648}.
+\newblock
+
+
+\bibitem[Ji et~al\mbox{.}(2023)]%
+        {ji2023survey}
+\bibfield{author}{\bibinfo{person}{Ziwei Ji}, \bibinfo{person}{Nayeon Lee},
+  \bibinfo{person}{Rita Frieske}, \bibinfo{person}{Tiezheng Yu},
+  \bibinfo{person}{Dan Su}, \bibinfo{person}{Yan Xu}, \bibinfo{person}{Etsuko
+  Ishii}, \bibinfo{person}{Ye~Jin Bang}, \bibinfo{person}{Andrea Madotto},
+  {and} \bibinfo{person}{Pascale Fung}.} \bibinfo{year}{2023}\natexlab{}.
+\newblock \showarticletitle{Survey of hallucination in natural language
+  generation}.
+\newblock \bibinfo{journal}{\emph{Comput. Surveys}} \bibinfo{volume}{55},
+  \bibinfo{number}{12} (\bibinfo{year}{2023}), \bibinfo{pages}{1--38}.
+\newblock
+
+
+\bibitem[Kingma et~al\mbox{.}(2016)]%
+        {kingma2016improved}
+\bibfield{author}{\bibinfo{person}{Durk~P Kingma}, \bibinfo{person}{Tim
+  Salimans}, \bibinfo{person}{Rafal Jozefowicz}, \bibinfo{person}{Xi Chen},
+  \bibinfo{person}{Ilya Sutskever}, {and} \bibinfo{person}{Max Welling}.}
+  \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Improved variational inference with inverse
+  autoregressive flow}.
+\newblock \bibinfo{journal}{\emph{Advances in Neural Information Processing
+  Systems}}  \bibinfo{volume}{29} (\bibinfo{year}{2016}).
+\newblock
+
+
+\bibitem[Kingma and Welling(2013)]%
+        {kingma2013auto}
+\bibfield{author}{\bibinfo{person}{Diederik~P Kingma} {and}
+  \bibinfo{person}{Max Welling}.} \bibinfo{year}{2013}\natexlab{}.
+\newblock \showarticletitle{Auto-encoding variational bayes}.
+\newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:1312.6114}}
+  (\bibinfo{year}{2013}).
+\newblock
+
+
+\bibitem[Liang et~al\mbox{.}(2018)]%
+        {liang2018variational}
+\bibfield{author}{\bibinfo{person}{Dawen Liang}, \bibinfo{person}{Rahul~G
+  Krishnan}, \bibinfo{person}{Matthew~D Hoffman}, {and} \bibinfo{person}{Tony
+  Jebara}.} \bibinfo{year}{2018}\natexlab{}.
+\newblock \showarticletitle{Variational autoencoders for collaborative
+  filtering}. In \bibinfo{booktitle}{\emph{Proceedings of the 2018 World Wide
+  Web conference}}. \bibinfo{pages}{689--698}.
+\newblock
+
+
+\bibitem[Lipman et~al\mbox{.}(2023)]%
+        {lipman2023rectified}
+\bibfield{author}{\bibinfo{person}{Yaron Lipman}, \bibinfo{person}{Ricky T.~Q.
+  Chen}, \bibinfo{person}{Heli Ben-Hamu}, \bibinfo{person}{Maximilian Nickel},
+  {and} \bibinfo{person}{Matt Le}.} \bibinfo{year}{2023}\natexlab{}.
+\newblock \showarticletitle{Rectified Flow: A Straight Path to High-Quality
+  Generative Models}.
+\newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:2309.03055}}
+  (\bibinfo{year}{2023}).
+\newblock
+
+
+\bibitem[Liu et~al\mbox{.}(2022)]%
+        {liu2022flow}
+\bibfield{author}{\bibinfo{person}{Xingchao Liu}, \bibinfo{person}{Chengyue
+  Gong}, {and} \bibinfo{person}{Qiang Liu}.} \bibinfo{year}{2022}\natexlab{}.
+\newblock \showarticletitle{Flow Matching for Generative Modeling}.
+\newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:2210.02747}}
+  (\bibinfo{year}{2022}).
+\newblock
+
+
+\bibitem[Ren et~al\mbox{.}(2024)]%
+        {ren2024representation}
+\bibfield{author}{\bibinfo{person}{Xubin Ren}, \bibinfo{person}{Wei Wei},
+  \bibinfo{person}{Lianghao Xia}, \bibinfo{person}{Lixin Su},
+  \bibinfo{person}{Suqi Cheng}, \bibinfo{person}{Junfeng Wang},
+  \bibinfo{person}{Dawei Yin}, {and} \bibinfo{person}{Chao Huang}.}
+  \bibinfo{year}{2024}\natexlab{}.
+\newblock \showarticletitle{Representation learning with large language models
+  for recommendation}. In \bibinfo{booktitle}{\emph{Proceedings of the ACM on
+  Web Conference 2024}}. \bibinfo{pages}{3464--3475}.
+\newblock
+
+
+\bibitem[Sheng et~al\mbox{.}(2025)]%
+        {sheng2024language}
+\bibfield{author}{\bibinfo{person}{Leheng Sheng}, \bibinfo{person}{An Zhang},
+  \bibinfo{person}{Yi Zhang}, \bibinfo{person}{Yuxin Chen},
+  \bibinfo{person}{Xiang Wang}, {and} \bibinfo{person}{Tat-Seng Chua}.}
+  \bibinfo{year}{2025}\natexlab{}.
+\newblock \showarticletitle{Language Representations Can be What Recommenders
+  Need: Findings and Potentials}. In \bibinfo{booktitle}{\emph{International
+  Conference on Learning Representations}}.
+\newblock
+
+
+\bibitem[Su et~al\mbox{.}(2023)]%
+        {su2023one}
+\bibfield{author}{\bibinfo{person}{Hongjin Su}, \bibinfo{person}{Weijia Shi},
+  \bibinfo{person}{Jungo Kasai}, \bibinfo{person}{Yizhong Wang},
+  \bibinfo{person}{Yushi Hu}, \bibinfo{person}{Mari Ostendorf},
+  \bibinfo{person}{Wen-tau Yih}, \bibinfo{person}{Noah~A Smith},
+  \bibinfo{person}{Luke Zettlemoyer}, {and} \bibinfo{person}{Tao Yu}.}
+  \bibinfo{year}{2023}\natexlab{}.
+\newblock \showarticletitle{One Embedder, Any Task: Instruction-Finetuned Text
+  Embeddings}. In \bibinfo{booktitle}{\emph{Findings of the Association for
+  Computational Linguistics: ACL 2023}}. \bibinfo{pages}{1102--1121}.
+\newblock
+
+
+\bibitem[Touvron et~al\mbox{.}(2023)]%
+        {touvron2023llama}
+\bibfield{author}{\bibinfo{person}{Hugo Touvron}, \bibinfo{person}{Thibaut
+  Lavril}, \bibinfo{person}{Gautier Izacard}, \bibinfo{person}{Xavier
+  Martinet}, \bibinfo{person}{Marie-Anne Lachaux},
+  \bibinfo{person}{Timoth{\'e}e Lacroix}, \bibinfo{person}{Baptiste
+  Rozi{\`e}re}, \bibinfo{person}{Naman Goyal}, \bibinfo{person}{Eric Hambro},
+  \bibinfo{person}{Faisal Azhar}, {et~al\mbox{.}}}
+  \bibinfo{year}{2023}\natexlab{}.
+\newblock \showarticletitle{Llama: Open and efficient foundation language
+  models}.
+\newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:2302.13971}}
+  (\bibinfo{year}{2023}).
+\newblock
+
+
+\bibitem[Wang et~al\mbox{.}(2023)]%
+        {wang2023diffusion}
+\bibfield{author}{\bibinfo{person}{Wenjie Wang}, \bibinfo{person}{Yiyan Xu},
+  \bibinfo{person}{Fuli Feng}, \bibinfo{person}{Xinyu Lin},
+  \bibinfo{person}{Xiangnan He}, {and} \bibinfo{person}{Tat-Seng Chua}.}
+  \bibinfo{year}{2023}\natexlab{}.
+\newblock \showarticletitle{Diffusion recommender model}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the 46th International ACM SIGIR
+  Conference on Research and Development in Information Retrieval}}.
+  \bibinfo{pages}{832--841}.
+\newblock
+
+
+\bibitem[Wei et~al\mbox{.}(2024)]%
+        {wei2024llmrec}
+\bibfield{author}{\bibinfo{person}{Wei Wei}, \bibinfo{person}{Xubin Ren},
+  \bibinfo{person}{Jiabin Tang}, \bibinfo{person}{Qinyong Wang},
+  \bibinfo{person}{Lixin Su}, \bibinfo{person}{Suqi Cheng},
+  \bibinfo{person}{Junfeng Wang}, \bibinfo{person}{Dawei Yin}, {and}
+  \bibinfo{person}{Chao Huang}.} \bibinfo{year}{2024}\natexlab{}.
+\newblock \showarticletitle{Llmrec: Large language models with graph
+  augmentation for recommendation}. In \bibinfo{booktitle}{\emph{Proceedings of
+  the 17th ACM International Conference on Web Search and Data Mining}}.
+  \bibinfo{pages}{806--815}.
+\newblock
+
+
+\bibitem[Xi et~al\mbox{.}(2024)]%
+        {xi2024towards}
+\bibfield{author}{\bibinfo{person}{Yunjia Xi}, \bibinfo{person}{Weiwen Liu},
+  \bibinfo{person}{Jianghao Lin}, \bibinfo{person}{Xiaoling Cai},
+  \bibinfo{person}{Hong Zhu}, \bibinfo{person}{Jieming Zhu},
+  \bibinfo{person}{Bo Chen}, \bibinfo{person}{Ruiming Tang},
+  \bibinfo{person}{Weinan Zhang}, {and} \bibinfo{person}{Yong Yu}.}
+  \bibinfo{year}{2024}\natexlab{}.
+\newblock \showarticletitle{Towards open-world recommendation with knowledge
+  augmentation from large language models}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the 18th ACM Conference on
+  Recommender Systems}}. \bibinfo{pages}{12--22}.
+\newblock
+
+
+\bibitem[Zhang et~al\mbox{.}(2025)]%
+        {zhang2024dmrec}
+\bibfield{author}{\bibinfo{person}{Yi Zhang}, \bibinfo{person}{Yiwen Zhang},
+  \bibinfo{person}{Yu Wang}, \bibinfo{person}{Tong Chen}, {and}
+  \bibinfo{person}{Hongzhi Yin}.} \bibinfo{year}{2025}\natexlab{}.
+\newblock \showarticletitle{Towards Distribution Matching between Collaborative
+  and Language Spaces for Generative Recommendation}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the 48th International ACM SIGIR
+  Conference on Research and Development in Information Retrieval}}.
+\newblock
+\newblock
+\shownote{To appear}.
+
+
+\bibitem[Zhang et~al\mbox{.}(2023)]%
+        {zhang2023revisiting}
+\bibfield{author}{\bibinfo{person}{Yi Zhang}, \bibinfo{person}{Yiwen Zhang},
+  \bibinfo{person}{Dengcheng Yan}, \bibinfo{person}{Shuiguang Deng}, {and}
+  \bibinfo{person}{Yun Yang}.} \bibinfo{year}{2023}\natexlab{}.
+\newblock \showarticletitle{Revisiting graph-based recommender systems from the
+  perspective of variational auto-encoder}.
+\newblock \bibinfo{journal}{\emph{ACM Transactions on Information Systems}}
+  \bibinfo{volume}{41}, \bibinfo{number}{3} (\bibinfo{year}{2023}),
+  \bibinfo{pages}{1--28}.
+\newblock
+
+
+\bibitem[Zhao et~al\mbox{.}(2023)]%
+        {zhao2023survey}
+\bibfield{author}{\bibinfo{person}{Wayne~Xin Zhao}, \bibinfo{person}{Kun Zhou},
+  \bibinfo{person}{Junyi Li}, \bibinfo{person}{Tianyi Tang},
+  \bibinfo{person}{Xiaolei Wang}, \bibinfo{person}{Yupeng Hou},
+  \bibinfo{person}{Yingqian Min}, \bibinfo{person}{Beichen Zhang},
+  \bibinfo{person}{Junjie Zhang}, \bibinfo{person}{Zican Dong},
+  {et~al\mbox{.}}} \bibinfo{year}{2023}\natexlab{}.
+\newblock \showarticletitle{A survey of large language models}.
+\newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:2303.18223}}
+  (\bibinfo{year}{2023}).
+\newblock
+
+
+\end{thebibliography}

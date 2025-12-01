@@ -11,6 +11,10 @@ from models.bulid_model import build_model
 from config.configurator import configs
 from .utils import DisabledSummaryWriter, log_exceptions
 
+# Note: This module can be imported as:
+#   - from trainer.trainer import Trainer (explicit, backward compatible)
+#   - from trainer import Trainer (cleaner, via __init__.py)
+
 
 def init_seed():
     if 'reproducible' in configs['train']:
@@ -120,8 +124,57 @@ class Trainer(object):
         train_config = configs['train']
 
         time_list = []
+        
+        # Check if RFDM strategy with reflow is used
+        # Auto-enable reflow after a certain fraction of training (if configured)
+        has_reflow_strategy = hasattr(model.strategy, 'use_reflow') and model.strategy.use_reflow
+        reflow_enable_epoch = None
+        reflow_auto_mode = None  # 'fixed', 'adaptive', or None (manual)
+        
+        if has_reflow_strategy:
+            # Get reflow auto-enable threshold from strategy object (not from config)
+            # Default is 0.5 (auto-enable at mid-training), but can be set to None for manual control
+            reflow_enable_threshold = getattr(model.strategy, 'reflow_enable_threshold', 0.5)
+            
+            # Check if adaptive mode is enabled (based on training metrics)
+            reflow_adaptive = getattr(model.strategy, 'reflow_adaptive', False)
+            
+            if reflow_adaptive:
+                # Adaptive mode: enable reflow based on training metrics (flow_loss stability, recall improvement, etc.)
+                reflow_auto_mode = 'adaptive'
+                print(f"[INFO] Reflow will be auto-enabled adaptively based on training metrics")
+                # Track metrics for adaptive decision
+                if not hasattr(model.strategy, '_reflow_metrics'):
+                    model.strategy._reflow_metrics = {
+                        'flow_loss_history': [],
+                        'recall_history': [],
+                        'min_epoch': int(train_config['epoch'] * 0.1),  # At least 10% training (reduced from 30% to allow early stopping scenarios)
+                        'max_epoch': int(train_config['epoch'] * 0.8),  # At most 80% training
+                    }
+            elif reflow_enable_threshold is not None and 0 < reflow_enable_threshold <= 1:
+                # Fixed mode: enable at fixed fraction of training
+                reflow_auto_mode = 'fixed'
+                reflow_enable_epoch = int(train_config['epoch'] * reflow_enable_threshold)
+                print(f"[INFO] Reflow will be auto-enabled at epoch {reflow_enable_epoch} "
+                      f"({reflow_enable_threshold*100:.0f}% of training)")
+            elif reflow_enable_threshold is None:
+                print(f"[INFO] Reflow auto-enable is disabled (threshold=None). Use manual control via update_reflow_step(1).")
 
         for epoch_idx in range(train_config['epoch']):
+            # Auto-enable reflow (for RFDM strategy)
+            if has_reflow_strategy and model.strategy.current_reflow_step == 0:
+                if reflow_auto_mode == 'fixed' and reflow_enable_epoch is not None:
+                    # Fixed mode: enable at specified epoch
+                    if epoch_idx == reflow_enable_epoch:
+                        model.strategy.update_reflow_step(1)
+                        print(f"[INFO] Reflow enabled at epoch {epoch_idx} (fixed threshold)")
+                elif reflow_auto_mode == 'adaptive':
+                    # Adaptive mode: enable based on training metrics
+                    should_enable = self._should_enable_reflow_adaptive(model, epoch_idx, train_config)
+                    if should_enable:
+                        model.strategy.update_reflow_step(1)
+                        print(f"[INFO] Reflow enabled at epoch {epoch_idx} (adaptive decision)")
+            
             # train
             start_time = time.time()
             self.train_epoch(model, epoch_idx)
@@ -131,6 +184,12 @@ class Trainer(object):
             # evaluate
             if epoch_idx % train_config['test_step'] == 0:
                 eval_result = self.evaluate(model, epoch_idx)
+                
+                # Update reflow metrics for adaptive mode
+                if has_reflow_strategy and reflow_auto_mode == 'adaptive':
+                    # Store recall for adaptive decision
+                    if hasattr(model.strategy, '_reflow_metrics'):
+                        model.strategy._reflow_metrics['recall_history'].append(eval_result['recall'][-1])
                 
                 # 更新学习率调度器（如果使用 ReduceLROnPlateau）
                 if self.scheduler is not None:
@@ -220,3 +279,50 @@ class Trainer(object):
             model.load_state_dict(torch.load(pretrain_path))
             self.logger.log(
                 "Load model parameters from {}".format(pretrain_path))
+    
+    def _should_enable_reflow_adaptive(self, model, epoch_idx, train_config):
+        """
+        Determine if reflow should be enabled based on training metrics (adaptive mode).
+        
+        Criteria:
+        1. Minimum training: at least 10% of epochs completed (reduced from 30% to allow early stopping scenarios)
+        2. Maximum training: at most 80% of epochs (to leave time for reflow)
+        3. Flow loss stability: flow_loss should be relatively stable (not decreasing rapidly)
+        4. Recall improvement: recall should have improved and be relatively stable
+        
+        Args:
+            model: the model being trained
+            epoch_idx: current epoch index
+            train_config: training configuration
+            
+        Returns:
+            bool: True if reflow should be enabled, False otherwise
+        """
+        if not hasattr(model.strategy, '_reflow_metrics'):
+            return False
+        
+        metrics = model.strategy._reflow_metrics
+        min_epoch = metrics['min_epoch']
+        max_epoch = metrics['max_epoch']
+        
+        # Check epoch bounds
+        if epoch_idx < min_epoch:
+            return False  # Too early
+        if epoch_idx >= max_epoch:
+            return True  # Force enable if we're past max_epoch
+        
+        # Check recall history (need at least 3 evaluations)
+        recall_history = metrics['recall_history']
+        if len(recall_history) < 3:
+            return False  # Not enough data
+        
+        # Check if recall has improved and is relatively stable
+        recent_recalls = recall_history[-3:]  # Last 3 evaluations
+        recall_improved = recent_recalls[-1] > recent_recalls[0]  # Improved from first to last
+        recall_stable = max(recent_recalls) - min(recent_recalls) < 0.005  # Variation < 0.5%
+        
+        # Enable if recall has improved and is stable (vector field is well-trained)
+        if recall_improved and recall_stable:
+            return True
+        
+        return False

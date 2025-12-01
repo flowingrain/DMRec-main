@@ -1,7 +1,7 @@
 from models.bulid_model import build_model
 from config.configurator import configs
 import torch
-from trainer.trainer import init_seed
+from trainer import init_seed  # Cleaner import: from trainer import instead of from trainer.trainer
 
 class Tuner(object):
     def __init__(self, logger):

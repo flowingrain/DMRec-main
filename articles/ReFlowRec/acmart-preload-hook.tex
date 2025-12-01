@@ -1,0 +1,44 @@
+%%
+%% acmart-preload-hook.tex
+%% This file is automatically loaded by acmart.cls before processing class options
+%% It allows us to customize acmart behavior without modifying the class file
+%%
+%% Purpose: Disable Libertine/NewTX fonts and force Computer Modern fonts
+%%
+%% Method: Intercept \IfFileExists to make acmart think font packages don't exist
+%% This causes acmart to automatically set \@ACM@newfontsfalse
+%%
+
+% Save the original \IfFileExists command
+\let\@ACM@hook@original@IfFileExists\IfFileExists
+
+% Redefine \IfFileExists to return false for font packages we want to block
+% Syntax: \IfFileExists{filename}{true code}{false code}
+\long\def\IfFileExists#1#2#3{%
+  % Check if this is a font package we want to block
+  \def\@ACM@hook@test@file{#1}%
+  \def\@ACM@hook@libertine{libertine.sty}%
+  \def\@ACM@hook@newtxmath{newtxmath.sty}%
+  \def\@ACM@hook@zi4{zi4.sty}%
+  % Compare filenames
+  \ifx\@ACM@hook@test@file\@ACM@hook@libertine
+    #3% Return false (package doesn't exist)
+  \else
+    \ifx\@ACM@hook@test@file\@ACM@hook@newtxmath
+      #3% Return false (package doesn't exist)
+    \else
+      \ifx\@ACM@hook@test@file\@ACM@hook@zi4
+        #3% Return false (package doesn't exist)
+      \else
+        % For other files, use original \IfFileExists
+        \@ACM@hook@original@IfFileExists{#1}{#2}{#3}%
+      \fi
+    \fi
+  \fi
+}
+
+% Restore original \IfFileExists after class loads (to avoid side effects)
+\AtEndOfClass{%
+  \let\IfFileExists\@ACM@hook@original@IfFileExists
+}
+
